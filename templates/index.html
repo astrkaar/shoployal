@@ -1,0 +1,785 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopLoyal — Customer Retention Dashboard</title>
+<style>
+  :root {
+    --bg: #f8f9fc;
+    --card: #ffffff;
+    --border: #e8ecf1;
+    --text: #1e293b;
+    --muted: #64748b;
+    --accent: #4f46e5;
+    --accent-light: #eef2ff;
+    --green: #10b981;
+    --green-light: #ecfdf5;
+    --red: #f43f5e;
+    --red-light: #fff1f2;
+    --amber: #f59e0b;
+    --amber-light: #fffbeb;
+    --radius: 16px;
+    --shadow: 0 2px 8px rgba(20, 20, 43, 0.04), 0 1px 2px rgba(20, 20, 43, 0.03);
+    --shadow-lg: 0 10px 25px rgba(20, 20, 43, 0.08), 0 4px 10px rgba(20, 20, 43, 0.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  .layout { display: flex; min-height: 100vh; }
+  
+  /* --- Sidebar --- */
+  nav {
+    width: 240px;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    padding: 28px 18px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  nav h1 { font-size: 20px; margin: 0 0 2px 12px; letter-spacing: -0.02em; }
+  nav .tagline { font-size: 12.5px; color: var(--muted); margin: 0 0 20px 12px; }
+
+  /* --- Shop identity chip in sidebar --- */
+  .shop-chip {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--accent-light); border: 1px solid #e0e5fb;
+    border-radius: 12px; padding: 10px 12px; margin: 0 0 22px;
+  }
+  .shop-chip .avatar {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: var(--accent); color: #fff; font-weight: 700; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; text-transform: uppercase;
+  }
+  .shop-chip .info { min-width: 0; }
+  .shop-chip .info .name {
+    font-size: 13.5px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;
+  }
+  .shop-chip .info .role { font-size: 11px; color: var(--muted); }
+
+  nav a {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; margin-bottom: 4px; border-radius: 10px;
+    color: var(--muted); text-decoration: none; font-size: 14.5px; font-weight: 500;
+    transition: background .15s, color .15s;
+  }
+  nav a:hover { background: #f4f5f9; color: var(--text); }
+  nav a.active { 
+    background: var(--accent-light); 
+    color: var(--accent); 
+    font-weight: 600;
+    border-left: 4px solid var(--accent);
+    padding-left: 10px;
+    border-radius: 0 10px 10px 0;
+  }
+  .sidebar-spacer { flex: 1; }
+  .sidebar-quick-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--green); color: white; padding: 12px; border-radius: 12px;
+    text-decoration: none; font-weight: 600; font-size: 14.5px;
+    margin-top: 10px; transition: background .15s;
+  }
+  .sidebar-quick-btn:hover { background: #059669; }
+  .sidebar-logout {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: #fff; color: var(--red); border: 1.5px solid #fecdd3;
+    padding: 10px; border-radius: 12px; text-decoration: none;
+    font-weight: 600; font-size: 14px; margin-top: 8px; transition: all .15s;
+  }
+  .sidebar-logout:hover { background: var(--red-light); }
+
+  /* --- Main Content --- */
+  main { flex: 1; padding: 32px 44px 100px; max-width: 1200px; }
+  h2 { margin: 0 0 4px; font-size: 24px; letter-spacing: -0.02em; }
+  .subtitle { color: var(--muted); font-size: 14.5px; margin-bottom: 28px; }
+
+  /* --- Stat Cards --- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card { 
+    background: var(--card); 
+    border: 1px solid var(--border); 
+    border-top: 4px solid transparent;
+    border-radius: var(--radius); 
+    padding: 18px 20px; 
+    box-shadow: var(--shadow); 
+    transition: transform .15s, box-shadow .15s;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .stat-card .value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-card .label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .stat-card.vip { border-top-color: var(--accent); } .stat-card.vip .value { color: var(--accent); }
+  .stat-card.risk { border-top-color: var(--red); } .stat-card.risk .value { color: var(--red); }
+  .stat-card.new { border-top-color: var(--green); } .stat-card.new .value { color: var(--green); }
+  .stat-card.money { border-top-color: var(--amber); } .stat-card.money .value { color: var(--amber); }
+
+  /* --- Cards --- */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px; margin-bottom: 24px; box-shadow: var(--shadow); }
+  .card h3 { margin: 0 0 16px; font-size: 16px; letter-spacing: -0.01em; }
+  .card .card-desc { color: var(--muted); font-size: 13.5px; margin: -10px 0 18px; line-height: 1.5; }
+
+  /* --- Tables --- */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; padding: 10px 12px; border-bottom: 2px solid var(--border); font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; }
+  td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+  tr:nth-child(even) td { background: #fafbfd; }
+  tr:hover td { background: #f4f5f9; }
+  tr.link-row { cursor: pointer; }
+
+  /* --- Badges --- */
+  .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+  .badge.VIP { background: var(--accent-light); color: var(--accent); }
+  .badge.At-risk { background: var(--red-light); color: var(--red); }
+  .badge.New { background: var(--green-light); color: var(--green); }
+  .badge.One-timer { background: var(--amber-light); color: var(--amber); }
+  .badge.Regular { background: #f1f5f9; color: var(--muted); }
+  .badge.No-visits { background: #f1f5f9; color: var(--muted); }
+  .badge.Sent { background: var(--amber-light); color: var(--amber); }
+  .badge.Redeemed { background: var(--green-light); color: var(--green); }
+  .badge.auto { background: var(--accent-light); color: var(--accent); margin-left: 6px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .dot.green { background: var(--green); } .dot.amber { background: var(--amber); } .dot.red { background: var(--red); }
+
+  /* --- Forms --- */
+  form.inline { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+  input, select, textarea {
+    background: #fff; border: 1.5px solid var(--border); color: var(--text);
+    padding: 10px 14px; border-radius: 10px; font-size: 14.5px; min-width: 160px; font-family: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-light); }
+  
+  /* --- Buttons --- */
+  button {
+    background: var(--accent); color: white; border: none; padding: 11px 20px;
+    border-radius: 10px; font-size: 14.5px; font-weight: 600; cursor: pointer; transition: background .15s, transform .1s;
+  }
+  button:hover { background: #4338ca; }
+  button:active { transform: scale(0.98); }
+  button.secondary { background: #f1f5f9; color: var(--text); }
+  button.secondary:hover { background: #e2e8f0; }
+  button.success { background: var(--green); }
+  button.success:hover { background: #059669; }
+  a.btn-link { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 14px; }
+
+  /* --- WhatsApp button --- */
+  .wa-btn {
+    background: #25D366; color: #fff; border: none;
+    width: 34px; height: 34px; border-radius: 9px; padding: 0;
+    font-size: 17px; cursor: pointer; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background .15s, transform .1s;
+  }
+  .wa-btn:hover { background: #1eb955; transform: scale(1.08); }
+  .wa-btn:active { transform: scale(.94); }
+  .wa-btn.muted { background: #cbd5e1; }
+  .wa-btn.muted:hover { background: #94a3b8; }
+  .wa-btn.wide {
+    width: auto; padding: 0 16px; gap: 8px; height: 40px; font-size: 14.5px; font-weight: 600;
+  }
+
+  /* --- Flash Messages --- */
+  .flash { padding: 14px 18px; border-radius: 12px; margin-bottom: 22px; font-size: 14.5px; font-weight: 500; }
+  .flash.success { background: var(--green-light); color: #059669; border: 1px solid #a7f3d0; }
+  .flash.error { background: var(--red-light); color: #e11d48; border: 1px solid #fecdd3; }
+
+  /* --- Segment Filters --- */
+  .segment-filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .segment-filters a { padding: 7px 16px; border-radius: 20px; font-size: 13.5px; text-decoration: none; background: #fff; color: var(--muted); border: 1.5px solid var(--border); transition: all .15s; }
+  .segment-filters a:hover { border-color: var(--muted); }
+  .segment-filters a.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .export-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--green); color: white; padding: 11px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14.5px; transition: background .15s; }
+  .export-btn:hover { background: #059669; }
+
+  .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 18px; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 20px; line-height: 1.7; background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .empty { color: var(--muted); font-size: 14.5px; padding: 28px 0; text-align: center; }
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; margin: 24px 0 12px; }
+  .toggle-row { display: flex; align-items: center; gap: 12px; }
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+
+  /* --- POS billing layout --- */
+  .pos-layout { display: flex; gap: 28px; align-items: flex-start; }
+  .pos-menu { flex: 1.5; }
+  .pos-cart { flex: 1; position: sticky; top: 20px; }
+  .item-category { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin: 20px 0 12px; }
+  .item-category:first-child { margin-top: 0; }
+  .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 12px; }
+  .item-tile {
+    background: #fff; border: 1.5px solid var(--border); border-radius: 14px; padding: 16px 14px;
+    cursor: pointer; text-align: left; transition: border-color .15s, transform .1s, box-shadow .15s; user-select: none; position: relative;
+  }
+  .item-tile:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+  .item-tile:active { transform: scale(.97); }
+  .item-tile .item-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .item-tile .item-price { color: var(--muted); font-size: 13.5px; }
+  .item-tile .qty-badge {
+    position: absolute; top: -8px; right: -8px; background: var(--accent); color: white;
+    border-radius: 50%; width: 24px; height: 24px; display: none; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+  }
+  .cart-line { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+  .cart-line .qty-controls { display: flex; align-items: center; gap: 10px; }
+  .qty-btn { width: 26px; height: 26px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; cursor: pointer; font-size: 15px; line-height: 1; display:flex; align-items:center; justify-content:center; transition: background .15s; }
+  .qty-btn:hover { background: #f8f9fc; }
+  .cart-total-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 17px; padding-top: 14px; margin-top: 10px; border-top: 2px solid var(--border); }
+  .coupon-status { font-size: 13px; margin-top: 8px; padding: 8px 12px; border-radius: 10px; }
+  .coupon-status.ok { background: var(--green-light); color: #059669; }
+  .coupon-status.bad { background: var(--red-light); color: #e11d48; }
+  .menu-item-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f1f5f9; }
+
+  /* --- Floating Action Button (FAB) --- */
+  .fab {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--green);
+    color: white;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    text-decoration: none;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    transition: transform .2s, background .15s;
+    z-index: 100;
+  }
+  .fab:hover { transform: scale(1.1) rotate(90deg); background: #059669; }
+
+  /* --- Responsive --- */
+  @media (max-width: 768px) {
+    .layout { flex-direction: column; }
+    nav { width: 100%; height: auto; position: relative; flex-direction: row; overflow-x: auto; padding: 16px; align-items: center; }
+    nav h1, nav .tagline, .sidebar-spacer, .sidebar-quick-btn, .shop-chip .info { display: none; }
+    nav a { white-space: nowrap; }
+    .shop-chip { margin: 0 8px 0 0; padding: 6px; }
+    .sidebar-logout { margin-top: 0; padding: 8px 12px; }
+    main { padding: 20px 16px 100px; }
+    .pos-layout { flex-direction: column; }
+    .pos-cart { position: relative; top: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <h1>ShopLoyal</h1>
+    <p class="tagline">Customer retention, simplified</p>
+
+    <div class="shop-chip">
+      <div class="avatar">{{ (shop_login or 'S')[0] }}</div>
+      <div class="info">
+        <div class="name" title="{{ shop_login }}">{{ shop_login or 'My Shop' }}</div>
+        <div class="role">Shop account</div>
+      </div>
+    </div>
+
+    <a href="/" class="{{ 'active' if page=='dashboard' }}">📊 Dashboard</a>
+    <a href="/billing" class="{{ 'active' if page in ['billing'] }}">🧾 New Bill</a>
+    <a href="/menu" class="{{ 'active' if page=='menu' }}">🍽️ Menu Items</a>
+    <a href="/customers" class="{{ 'active' if page in ['customers','customer_detail'] }}">👥 Customers</a>
+    <a href="/coupons" class="{{ 'active' if page=='coupons' }}">🎟️ Coupons</a>
+    <a href="/settings" class="{{ 'active' if page=='settings' }}">⚙️ Settings</a>
+    <a href="/export_csv">⬇️ Export CSV</a>
+    
+    <div class="sidebar-spacer"></div>
+    <a href="/billing" class="sidebar-quick-btn">➕ New Bill</a>
+    <a href="/logout" class="sidebar-logout">🚪 Log Out</a>
+  </nav>
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for category, msg in messages %}<div class="flash {{ category }}">{{ msg }}</div>{% endfor %}{% endif %}
+    {% endwith %}
+
+    {% if page == 'dashboard' %}
+      <h2>Dashboard</h2>
+      <p class="subtitle">Live snapshot of your shop's customer base</p>
+
+      <div class="grid">
+        <div class="stat-card"><div class="value">{{ total_customers }}</div><div class="label">Total Customers</div></div>
+        <div class="stat-card money"><div class="value">₹{{ "%.0f"|format(total_revenue) }}</div><div class="label">Total Revenue</div></div>
+        <div class="stat-card vip"><div class="value">{{ vip|length }}</div><div class="label">VIP Customers</div></div>
+        <div class="stat-card risk"><div class="value">{{ at_risk|length }}</div><div class="label">At-risk / Lapsing</div></div>
+        <div class="stat-card new"><div class="value">{{ new|length }}</div><div class="label">New Customers</div></div>
+        <div class="stat-card"><div class="value">{{ onetimer|length }}</div><div class="label">One-timers</div></div>
+      </div>
+
+      <div class="card">
+        <h3>🤖 Automated Coupon Engine</h3>
+        <p class="card-desc">Runs automatically every 24 hours in the background — scans segments and issues coupons with no manual work.</p>
+        <div class="grid" style="margin-bottom:0;">
+          <div class="stat-card"><div class="value">{{ coupons_sent }}</div><div class="label">Coupons Sent</div></div>
+          <div class="stat-card"><div class="value">{{ auto_coupons }}</div><div class="label">Auto-Generated</div></div>
+          <div class="stat-card"><div class="value">{{ coupons_redeemed }}</div><div class="label">Redeemed</div></div>
+          <div class="stat-card money"><div class="value">₹{{ "%.0f"|format(redeemed_revenue) }}</div><div class="label">Revenue From Redemptions</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>⭐ Top 3 VIP Customers</h3>
+        {% if top_vip %}
+        <table><tr><th>Phone</th><th>Name</th><th>Visits</th><th>Total Spend</th></tr>
+        {% for s in top_vip %}<tr><td>{{ s.phone }}</td><td>{{ s.name }}</td><td>{{ s.visits }}</td><td>₹{{ "%.0f"|format(s.total_spend) }}</td></tr>{% endfor %}
+        </table>
+        {% else %}<div class="empty">No VIP customers yet — add some bills to get started.</div>{% endif %}
+      </div>
+
+      <div class="card">
+        <h3>⚠️ Customers About to Churn</h3>
+        {% if at_risk %}
+        <table><tr><th>Phone</th><th>Name</th><th>Visits</th><th>Days Since Last Visit</th></tr>
+        {% for s in at_risk %}<tr><td>{{ s.phone }}</td><td>{{ s.name }}</td><td>{{ s.visits }}</td><td>{{ s.days_since_last }}</td></tr>{% endfor %}
+        </table>
+        {% else %}<div class="empty">No lapsing customers right now. 🎉</div>{% endif %}
+      </div>
+
+      <a href="/export_csv" class="export-btn">⬇️ Download Weekly CSV Report</a>
+
+    {% elif page == 'billing' %}
+      <h2>New Bill</h2>
+      <p class="subtitle">Tap items to add them — total is calculated automatically</p>
+
+      <form method="POST" action="/billing" id="billForm">
+        <div class="pos-layout">
+          <div class="pos-menu">
+            {% if items %}
+              {% set ns = namespace(last_cat='') %}
+              {% for item in items %}
+                {% if item.category != ns.last_cat %}
+                  <div class="item-category">{{ item.category }}</div>
+                  {% set ns.last_cat = item.category %}
+                  <div class="item-grid">
+                {% endif %}
+                <div class="item-tile" onclick="incrementItem({{ item.id }})">
+                  <div class="qty-badge" id="badge_{{ item.id }}">0</div>
+                  <div class="item-name">{{ item.name }}</div>
+                  <div class="item-price">₹{{ "%.0f"|format(item.price) }}</div>
+                </div>
+                <input type="hidden" name="qty_{{ item.id }}" id="qty_{{ item.id }}" value="0">
+                {% if loop.last %}</div>{% endif %}
+              {% endfor %}
+            {% else %}
+              <div class="card">
+                <div class="empty">No menu items yet. <a href="/menu" class="btn-link">Add your menu items →</a></div>
+                <p class="card-desc" style="margin-top:14px;">Or enter a bill amount manually below for now.</p>
+                <div class="field"><label>Bill Amount (₹)</label><input type="number" step="0.01" name="manual_amount"></div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="pos-cart">
+            <div class="card">
+              <h3>🧾 Current Bill</h3>
+              <div id="cartLines"><div class="empty" id="cartEmpty">No items added yet</div></div>
+              <div class="cart-total-row"><span>Total</span><span id="cartTotal">₹0</span></div>
+
+              <hr class="divider">
+              <div class="field" style="margin-bottom:10px;"><label>Phone Number *</label><input type="text" name="phone" id="phoneInput" placeholder="9876543210" required></div>
+              <div class="field" style="margin-bottom:10px;"><label>Name (optional)</label><input type="text" name="name" placeholder="Rahul"></div>
+              <div class="field" style="margin-bottom:6px;"><label>Coupon Code (optional)</label><input type="text" name="coupon_code" id="couponInput" placeholder="SAVE-XXXXXX"></div>
+              <div id="couponStatus"></div>
+
+              <button type="submit" style="width:100%; margin-top:16px;">Save & Print Bill</button>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <script>
+        const prices = {{ item_prices | tojson }};
+        const qtys = {};
+
+        function incrementItem(id) {
+          qtys[id] = (qtys[id] || 0) + 1;
+          document.getElementById('qty_' + id).value = qtys[id];
+          const badge = document.getElementById('badge_' + id);
+          badge.style.display = 'flex';
+          badge.textContent = qtys[id];
+          renderCart();
+        }
+        function decrementItem(id) {
+          qtys[id] = Math.max(0, (qtys[id] || 0) - 1);
+          document.getElementById('qty_' + id).value = qtys[id];
+          const badge = document.getElementById('badge_' + id);
+          if (qtys[id] === 0) { badge.style.display = 'none'; } else { badge.textContent = qtys[id]; }
+          renderCart();
+        }
+        function renderCart() {
+          const container = document.getElementById('cartLines');
+          const ids = Object.keys(qtys).filter(id => qtys[id] > 0);
+          if (ids.length === 0) {
+            container.innerHTML = '<div class="empty" id="cartEmpty">No items added yet</div>';
+            document.getElementById('cartTotal').textContent = '₹0';
+            return;
+          }
+          let html = '';
+          let total = 0;
+          ids.forEach(id => {
+            const p = prices[id];
+            const lineTotal = p.price * qtys[id];
+            total += lineTotal;
+            html += `<div class="cart-line">
+                <span>${p.name}</span>
+                <div class="qty-controls">
+                  <button type="button" class="qty-btn" onclick="decrementItem(${id})">−</button>
+                  <span>${qtys[id]}</span>
+                  <button type="button" class="qty-btn" onclick="incrementItem(${id})">+</button>
+                  <span style="min-width:55px; text-align:right;">₹${lineTotal.toFixed(0)}</span>
+                </div>
+              </div>`;
+          });
+          container.innerHTML = html;
+          document.getElementById('cartTotal').textContent = '₹' + total.toFixed(0);
+        }
+
+        const couponInput = document.getElementById('couponInput');
+        if (couponInput) {
+          couponInput.addEventListener('blur', function() {
+            const code = this.value.trim();
+            const phone = document.getElementById('phoneInput').value.trim();
+            const statusDiv = document.getElementById('couponStatus');
+            if (!code || !phone) { statusDiv.innerHTML = ''; return; }
+            fetch(`/api/coupon_check?code=${encodeURIComponent(code)}&phone=${encodeURIComponent(phone)}`)
+              .then(r => r.json())
+              .then(data => {
+                statusDiv.innerHTML = `<div class="coupon-status ${data.valid ? 'ok' : 'bad'}">${data.message}</div>`;
+              });
+          });
+        }
+      </script>
+
+    {% elif page == 'menu' %}
+      <h2>Menu Items</h2>
+      <p class="subtitle">Add each item once — then billing is just a tap</p>
+
+      <div class="card">
+        <h3>Add New Item</h3>
+        <form class="inline" method="POST" action="/menu">
+          <div class="field"><label>Item Name *</label><input type="text" name="name" placeholder="Cold Coffee" required></div>
+          <div class="field"><label>Price (₹) *</label><input type="number" step="0.01" name="price" placeholder="120" required></div>
+          <div class="field"><label>Category</label><input type="text" name="category" placeholder="Beverages"></div>
+          <button type="submit">Add Item</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Your Menu</h3>
+        {% if items %}
+          {% for item in items %}
+          <div class="menu-item-row">
+            <div>
+              <b>{{ item.name }}</b> — ₹{{ "%.0f"|format(item.price) }}
+              <span class="badge Regular">{{ item.category }}</span>
+              {% if not item.active %}<span class="badge At-risk">Hidden</span>{% endif %}
+            </div>
+            <div style="display:flex; gap:8px;">
+              <form method="POST" action="/menu/toggle/{{ item.id }}">
+                <button type="submit" class="secondary">{{ 'Show' if not item.active else 'Hide' }}</button>
+              </form>
+              <form method="POST" action="/menu/delete/{{ item.id }}" onsubmit="return confirm('Delete this item?');">
+                <button type="submit" class="secondary">Delete</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">No items yet. Add your first one above.</div>
+        {% endif %}
+      </div>
+
+    {% elif page == 'customers' %}
+      <h2>Customers</h2>
+      <p class="subtitle">Auto-segmented from live visit timestamps — click a row to see full history. Tap 💬 to message on WhatsApp.</p>
+
+      <div class="segment-filters">
+        {% for seg in ['All','VIP','At-risk','New','One-timer','Regular','No visits'] %}
+        <a href="/customers?segment={{ seg }}" class="{{ 'active' if filter_seg==seg }}">{{ seg }}</a>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        {% if stats %}
+        <table>
+          <tr><th>Phone</th><th>Name</th><th>Segment</th><th>Visits</th><th>Total Spend</th><th>Avg Bill</th><th>Last Visit</th><th>WhatsApp</th></tr>
+          {% for s in stats %}
+          <tr class="link-row" onclick="window.location='/customer/{{ s.id }}'">
+            <td>{{ s.phone }}</td><td>{{ s.name }}</td>
+            <td><span class="badge {{ s.segment.replace(' ','-') }}">{{ s.segment }}</span></td>
+            <td>{{ s.visits }}</td><td>₹{{ "%.0f"|format(s.total_spend) }}</td><td>₹{{ "%.0f"|format(s.avg_bill) }}</td>
+            <td>
+              {% if s.days_since_last is not none %}
+                <span class="dot {{ 'green' if s.days_since_last <= 7 else ('amber' if s.days_since_last <= 21 else 'red') }}"></span>{{ s.days_since_last }} days ago
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% set cp = active_coupons.get(s.id) %}
+              {% if cp %}
+                <button type="button" class="wa-btn"
+                  data-phone="{{ s.phone }}"
+                  data-message="Hi {{ s.name if s.name != '—' else 'there' }}! 🎉 Here is your {{ cp.offer }} coupon at {{ shop_name }}: {{ cp.code }}. Show this at billing to redeem. See you soon!"
+                  onclick="sendWhatsAppStop(event, this.dataset.phone, this.dataset.message)">
+                  💬
+                </button>
+              {% else %}
+                <button type="button" class="wa-btn muted"
+                  data-phone="{{ s.phone }}"
+                  data-message="Hi {{ s.name if s.name != '—' else 'there' }}! Thanks for visiting {{ shop_name }}. We hope to see you again soon! 😊"
+                  onclick="sendWhatsAppStop(event, this.dataset.phone, this.dataset.message)">
+                  💬
+                </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+        {% else %}<div class="empty">No customers in this segment.</div>{% endif %}
+      </div>
+
+    {% elif page == 'customer_detail' %}
+      <h2>{{ customer.name or customer.phone }}</h2>
+      <p class="subtitle">{{ customer.phone }} · Customer since {{ customer.created_at[:10] }}</p>
+
+      {% if s %}
+      <div class="grid">
+        <div class="stat-card"><div class="value"><span class="badge {{ s.segment.replace(' ','-') }}">{{ s.segment }}</span></div><div class="label">Current Segment</div></div>
+        <div class="stat-card"><div class="value">{{ s.visits }}</div><div class="label">Total Visits</div></div>
+        <div class="stat-card money"><div class="value">₹{{ "%.0f"|format(s.total_spend) }}</div><div class="label">Lifetime Spend</div></div>
+        <div class="stat-card"><div class="value">{{ s.days_since_last if s.days_since_last is not none else '—' }}</div><div class="label">Days Since Last Visit</div></div>
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <h3>💬 Message This Customer</h3>
+        <p class="card-desc">Send a quick WhatsApp message — opens directly in the app with the text pre-filled.</p>
+        <button type="button" class="wa-btn wide"
+          data-phone="{{ customer.phone }}"
+          data-message="Hi {{ customer.name if customer.name else 'there' }}! Thanks for being a valued customer at {{ settings.shop_name if settings else 'our shop' }}. 😊"
+          onclick="sendWhatsApp(this.dataset.phone, this.dataset.message)">
+          💬 Open WhatsApp Chat
+        </button>
+      </div>
+
+      <div class="card">
+        <h3>🕒 Visit Timeline</h3>
+        <p class="card-desc">Exactly how time-tracking works: every row below is a real timestamp from a saved bill. "Days since last visit" is just (today − most recent row here), recalculated fresh every time you open this page.</p>
+        {% if bills %}
+        <table><tr><th>Date & Time</th><th>Subtotal</th><th>Discount</th><th>Total Paid</th></tr>
+          {% for b in bills %}
+          <tr><td>{{ b.created_at }}</td><td>₹{{ "%.0f"|format(b.subtotal) }}</td><td>{% if b.discount > 0 %}-₹{{ "%.0f"|format(b.discount) }}{% else %}—{% endif %}</td><td>₹{{ "%.0f"|format(b.total) }}</td></tr>
+          {% endfor %}
+        </table>
+        {% else %}<div class="empty">No visits recorded yet.</div>{% endif %}
+      </div>
+
+      <div class="card">
+        <h3>🎟️ Coupon History</h3>
+        {% if coupons_list %}
+        <table><tr><th>Code</th><th>Reason</th><th>Offer</th><th>Status</th><th>Issued</th><th>Send</th></tr>
+          {% for c in coupons_list %}
+          <tr><td><b>{{ c.code }}</b></td><td>{{ c.reason }}{% if c.auto_generated %}<span class="badge auto">Auto</span>{% endif %}</td>
+              <td>{{ '%.0f'|format(c.discount_value) }}{{ '%' if c.discount_type=='percent' else ' ₹' }} off</td>
+              <td><span class="badge {{ c.status }}">{{ c.status }}</span></td><td>{{ c.created_at[:10] }}</td>
+              <td>
+                {% if c.status != 'Redeemed' %}
+                <button type="button" class="wa-btn"
+                  data-phone="{{ customer.phone }}"
+                  data-message="Hi {{ customer.name if customer.name else 'there' }}! 🎉 Here is your {{ '%.0f'|format(c.discount_value) }}{{ '%' if c.discount_type=='percent' else ' ₹' }} off coupon at {{ settings.shop_name if settings else 'our shop' }}: {{ c.code }}. Show this at billing to redeem!"
+                  onclick="sendWhatsApp(this.dataset.phone, this.dataset.message)">
+                  💬
+                </button>
+                {% else %}—{% endif %}
+              </td></tr>
+          {% endfor %}
+        </table>
+        {% else %}<div class="empty">No coupons issued to this customer yet.</div>{% endif %}
+      </div>
+
+      <a href="/customers" class="btn-link">← Back to all customers</a>
+
+    {% elif page == 'coupons' %}
+      <h2>Coupons</h2>
+      <p class="subtitle">The engine auto-detects who should get a coupon — no manual picking required</p>
+
+      <div class="card">
+        <h3>🤖 Automated Engine</h3>
+        <p class="card-desc">
+          {% if settings.auto_coupon_enabled %}
+            Enabled — runs automatically every 24 hours. At-risk customers get a {{ "%.0f"|format(settings.at_risk_discount_value) }}{{ '%' if settings.at_risk_discount_type=='percent' else ' ₹' }} win-back coupon; VIPs get a {{ "%.0f"|format(settings.vip_discount_value) }}{{ '%' if settings.vip_discount_type=='percent' else ' ₹' }} thank-you reward. No repeat coupon to the same person within {{ settings.auto_coupon_cooldown_days }} days.
+          {% else %}
+            Currently disabled — turn it on in Settings to automate this.
+          {% endif %}
+        </p>
+        <form method="POST" action="/coupons">
+          <input type="hidden" name="action" value="run_engine">
+          <button type="submit" class="success">▶ Run Engine Now</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Generate a Manual Coupon</h3>
+        <p class="card-desc">For one-off cases outside the automated rules</p>
+        <form class="inline" method="POST" action="/coupons">
+          <div class="field">
+            <label>Customer</label>
+            <select name="customer_id" required>
+              <option value="">Select customer...</option>
+              {% for s in stats %}<option value="{{ s.id }}">{{ s.phone }} — {{ s.name }} ({{ s.segment }})</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field"><label>Reason</label><input type="text" name="reason" value="Manual offer"></div>
+          <div class="field"><label>Discount Type</label>
+            <select name="discount_type"><option value="percent">Percent (%)</option><option value="flat">Flat (₹)</option></select>
+          </div>
+          <div class="field"><label>Value</label><input type="number" step="0.01" name="discount_value" value="10"></div>
+          <button type="submit">Generate Coupon</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>All Coupons</h3>
+        {% if all_coupons %}
+        <table><tr><th>Code</th><th>Phone</th><th>Name</th><th>Offer</th><th>Reason</th><th>Status</th><th>Issued</th><th>Send</th></tr>
+          {% for c in all_coupons %}
+          <tr><td><b>{{ c.code }}</b></td><td>{{ c.phone }}</td><td>{{ c.name or '—' }}</td>
+            <td>{{ format_discount(c.discount_type, c.discount_value) }}</td>
+            <td>{{ c.reason }}{% if c.auto_generated %}<span class="badge auto">Auto</span>{% endif %}</td>
+            <td><span class="badge {{ c.status }}">{{ c.status }}</span></td><td>{{ c.created_at }}</td>
+            <td>
+              {% if c.status != 'Redeemed' %}
+              <button type="button" class="wa-btn"
+                data-phone="{{ c.phone }}"
+                data-message="Hi {{ c.name if c.name else 'there' }}! 🎉 Here is your {{ format_discount(c.discount_type, c.discount_value) }} coupon at {{ settings.shop_name }}: {{ c.code }}. Show this at billing to redeem!"
+                onclick="sendWhatsApp(this.dataset.phone, this.dataset.message)">
+                💬
+              </button>
+              {% else %}—{% endif %}
+            </td></tr>
+          {% endfor %}
+        </table>
+        {% else %}<div class="empty">No coupons generated yet.</div>{% endif %}
+      </div>
+
+    {% elif page == 'settings' %}
+      <h2>Settings</h2>
+      <p class="subtitle">Shop details, segmentation rules, and auto-coupon behavior — all in one place</p>
+
+      <form method="POST" action="/settings">
+        <div class="card">
+          <h3>🏪 Shop Details (used on printed receipts)</h3>
+          <div class="settings-grid">
+            <div class="field"><label>Shop Name</label><input type="text" name="shop_name" value="{{ settings.shop_name }}"></div>
+            <div class="field"><label>Phone</label><input type="text" name="shop_phone" value="{{ settings.shop_phone }}"></div>
+            <div class="field" style="grid-column: span 2;"><label>Address</label><input type="text" name="shop_address" value="{{ settings.shop_address }}"></div>
+            <div class="field" style="grid-column: span 2;"><label>Receipt Footer / Marketing Message</label><input type="text" name="footer_message" value="{{ settings.footer_message }}"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📐 Segmentation Rules</h3>
+          <p class="card-desc">Tune per business type — a cafe and a clothing brand shouldn't use the same thresholds</p>
+          <div class="settings-grid">
+            <div class="field"><label>VIP: Minimum Visits</label><input type="number" name="vip_min_visits" value="{{ settings.vip_min_visits }}"></div>
+            <div class="field"><label>VIP: Window (days)</label><input type="number" name="vip_window_days" value="{{ settings.vip_window_days }}"></div>
+            <div class="field"><label>VIP: Top Spend Percentile</label><input type="number" name="vip_top_percent" value="{{ settings.vip_top_percent }}"></div>
+            <div class="field"><label>At-risk: Days Since Last Visit</label><input type="number" name="lapsing_days" value="{{ settings.lapsing_days }}"></div>
+            <div class="field"><label>At-risk: Minimum Prior Visits</label><input type="number" name="lapsing_min_visits" value="{{ settings.lapsing_min_visits }}"></div>
+            <div class="field"><label>New: Window (days)</label><input type="number" name="new_days" value="{{ settings.new_days }}"></div>
+            <div class="field"><label>One-timer: Days Since Visit</label><input type="number" name="onetimer_days" value="{{ settings.onetimer_days }}"></div>
+          </div>
+          <div class="hint">
+            <b>How time-tracking works:</b> every bill is saved with the exact timestamp it was made. "Days since last visit" is calculated live as (right now − timestamp of that customer's most recent bill) — it's never a stored/stale number, it updates the instant you load any page.<br><br>
+            <b>Example presets</b> — Cafe: At-risk 14 days, VIP 5 visits / 60-day window. Clothing brand: At-risk 60 days, VIP 3 visits / 180-day window.
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🤖 Automated Coupon Engine</h3>
+          <p class="card-desc">This replaces manually deciding who gets a coupon. It scans live segments and issues coupons on its own.</p>
+          <div class="toggle-row" style="margin-bottom:16px;">
+            <input type="checkbox" name="auto_coupon_enabled" id="autoToggle" {{ 'checked' if settings.auto_coupon_enabled }} style="min-width:auto; width:18px; height:18px;">
+            <label for="autoToggle" style="font-size:14px; color:var(--text); font-weight:500;">Enable automated coupon engine (runs every 24 hours)</label>
+          </div>
+          <div class="settings-grid">
+            <div class="field"><label>Don't repeat a coupon within (days)</label><input type="number" name="auto_coupon_cooldown_days" value="{{ settings.auto_coupon_cooldown_days }}"></div>
+            <div class="field"><label>At-risk offer type</label>
+              <select name="at_risk_discount_type">
+                <option value="percent" {{ 'selected' if settings.at_risk_discount_type=='percent' }}>Percent (%)</option>
+                <option value="flat" {{ 'selected' if settings.at_risk_discount_type=='flat' }}>Flat (₹)</option>
+              </select>
+            </div>
+            <div class="field"><label>At-risk offer value</label><input type="number" step="0.01" name="at_risk_discount_value" value="{{ settings.at_risk_discount_value }}"></div>
+            <div class="field"><label>VIP reward type</label>
+              <select name="vip_discount_type">
+                <option value="percent" {{ 'selected' if settings.vip_discount_type=='percent' }}>Percent (%)</option>
+                <option value="flat" {{ 'selected' if settings.vip_discount_type=='flat' }}>Flat (₹)</option>
+              </select>
+            </div>
+            <div class="field"><label>VIP reward value</label><input type="number" step="0.01" name="vip_discount_value" value="{{ settings.vip_discount_value }}"></div>
+          </div>
+        </div>
+
+        <button type="submit">Save All Settings</button>
+      </form>
+
+      <div class="card" style="margin-top:22px;">
+        <h3>💾 Data & Backups</h3>
+        <p class="card-desc">
+          Your shop's data is stored securely and isolated from every other shop on this platform.
+          Full database backups are managed centrally by the platform administrator, so there's
+          nothing you need to do here. For your own records, you can always download your customer
+          data as a CSV file below.
+        </p>
+        <a href="/export_csv" class="export-btn">⬇️ Export My Customer Data (CSV)</a>
+      </div>
+    {% endif %}
+  </main>
+</div>
+
+<a href="/billing" class="fab" title="Create New Bill">+</a>
+
+<script>
+  function sendWhatsApp(phone, text) {
+    console.log('sendWhatsApp called', {phone, text});
+    
+    let digits = String(phone).replace(/\D/g, '');
+    if (digits.length === 10) digits = '91' + digits;
+    
+    const encoded = encodeURIComponent(text);
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    console.log('Opening WhatsApp:', {digits, isMobile, text});
+
+    if (isMobile) {
+      window.location.href = `whatsapp://send?phone=${digits}&text=${encoded}`;
+    } else {
+      window.open(`https://web.whatsapp.com/send?phone=${digits}&text=${encoded}`, '_blank');
+    }
+  }
+
+  function sendWhatsAppStop(event, phone, text) {
+    event.stopPropagation();
+    event.preventDefault();
+    sendWhatsApp(phone, text);
+    return false;
+  }
+
+  console.log('WhatsApp functions loaded ✓');
+</script>
+
+</body>
+</html>

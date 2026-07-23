@@ -1104,6 +1104,30 @@ def export_csv():
                     headers={"Content-Disposition": "attachment;filename=customer_report.csv"})
 
 
+
+import urllib.request
+
+SELF_URL = os.environ.get("SELF_URL", "https://shoployal.vercel.app/login")
+
+def ping_self():
+    """Pings the login page to keep the server from sleeping."""
+    try:
+        with urllib.request.urlopen(SELF_URL, timeout=10) as response:
+            print(f"[Self-Ping] {SELF_URL} -> Status {response.status}")
+    except Exception as e:
+        print(f"[Self-Ping] Failed: {e}")
+
+
+def start_scheduler():
+    scheduler = BackgroundScheduler(daemon=True)
+    # existing job: run coupon engine every 24 hours
+    scheduler.add_job(run_engine_all_shops, "interval", hours=24, next_run_time=now())
+    # NEW: self-ping every 10 minutes to prevent sleep
+    scheduler.add_job(ping_self, "interval", minutes=10, next_run_time=now())
+    scheduler.start()
+
+
+
 if __name__ == "__main__":
     init_db()
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:

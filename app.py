@@ -1107,7 +1107,7 @@ def export_csv():
 
 import urllib.request
 
-SELF_URL = os.environ.get("SELF_URL", "https://shoployal.vercel.app/login")
+SELF_URL = os.environ.get("SELF_URL", "https://shoployal.onrender.com/")
 
 def ping_self():
     """Pings the login page to keep the server from sleeping."""

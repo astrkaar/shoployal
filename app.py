@@ -1,9 +1,9 @@
-import sqlite3
 import random
 import string
 import csv
 import io
 import os
+import json
 import shutil
 from functools import wraps
 from datetime import datetime, timedelta
@@ -15,27 +15,72 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from apscheduler.schedulers.background import BackgroundScheduler
 
+import psycopg2
+import psycopg2.extras
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key-before-real-deploy")
-DB = "shop.db"
 
 # The master admin password. CHANGE THIS or set the ADMIN_PASSWORD env var.
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
 
+DATABASE_URL = os.environ["DATABASE_URL"]
+
 
 # ---------------------------------------------------------------------------
-# DATABASE SETUP
+# DATABASE SETUP (Postgres via psycopg2)
+#
+# sqlite3's Cursor.execute() returns the cursor itself, so the rest of this
+# app was written using the pattern:
+#     conn.execute(sql, params).fetchall()
+#     c = conn.cursor(); c.execute(sql, params).fetchone()
+#
+# psycopg2's cursor.execute() returns None instead, which breaks that
+# chaining. Rather than rewrite every call site, these two thin wrapper
+# classes restore the same chainable interface on top of real psycopg2
+# connections/cursors, so all existing query code above this line works
+# completely unchanged.
 # ---------------------------------------------------------------------------
+class _CursorWrapper:
+    def __init__(self, cur):
+        self._cur = cur
+
+    def execute(self, sql, params=None):
+        self._cur.execute(sql, params or ())
+        return self  # enables sqlite3-style chaining: .execute(...).fetchall()
+
+    def fetchone(self):
+        return self._cur.fetchone()
+
+    def fetchall(self):
+        return self._cur.fetchall()
+
+    def close(self):
+        self._cur.close()
+
+
+class _ConnWrapper:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, sql, params=None):
+        cur = self._conn.cursor()
+        cur.execute(sql, params or ())
+        return _CursorWrapper(cur)
+
+    def cursor(self):
+        return _CursorWrapper(self._conn.cursor())
+
+    def commit(self):
+        self._conn.commit()
+
+    def close(self):
+        self._conn.close()
+
+
 def get_db():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
-
-
-def _table_has_column(c, table, column):
-    c.execute(f"PRAGMA table_info({table})")
-    return any(row[1] == column for row in c.fetchall())
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    return _ConnWrapper(conn)
 
 
 def init_db():
@@ -44,7 +89,7 @@ def init_db():
 
     # -- SHOPS: the tenants. Each business = one row here. --------------------
     c.execute("""CREATE TABLE IF NOT EXISTS shops (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         shop_login TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         active INTEGER DEFAULT 1,
@@ -52,7 +97,7 @@ def init_db():
     )""")
 
     c.execute("""CREATE TABLE IF NOT EXISTS customers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         shop_id INTEGER NOT NULL,
         phone TEXT NOT NULL,
         name TEXT,
@@ -62,7 +107,7 @@ def init_db():
     )""")
 
     c.execute("""CREATE TABLE IF NOT EXISTS menu_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         shop_id INTEGER NOT NULL,
         name TEXT NOT NULL,
         price REAL NOT NULL,
@@ -72,7 +117,7 @@ def init_db():
     )""")
 
     c.execute("""CREATE TABLE IF NOT EXISTS coupons (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         shop_id INTEGER NOT NULL,
         customer_id INTEGER NOT NULL,
         code TEXT NOT NULL,
@@ -90,7 +135,7 @@ def init_db():
     )""")
 
     c.execute("""CREATE TABLE IF NOT EXISTS bills (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         shop_id INTEGER NOT NULL,
         customer_id INTEGER NOT NULL,
         subtotal REAL NOT NULL,
@@ -103,7 +148,7 @@ def init_db():
     )""")
 
     c.execute("""CREATE TABLE IF NOT EXISTS bill_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         bill_id INTEGER NOT NULL,
         item_name TEXT NOT NULL,
         price REAL NOT NULL,
@@ -111,7 +156,7 @@ def init_db():
         FOREIGN KEY(bill_id) REFERENCES bills(id)
     )""")
 
-    # -- SETTINGS: now ONE ROW PER SHOP -------------------------------------
+    # -- SETTINGS: ONE ROW PER SHOP -------------------------------------
     c.execute("""CREATE TABLE IF NOT EXISTS settings (
         shop_id INTEGER PRIMARY KEY,
         shop_name TEXT DEFAULT 'My Shop',
@@ -168,12 +213,12 @@ def create_shop(shop_login, password):
     conn = get_db()
     c = conn.cursor()
     c.execute(
-        "INSERT INTO shops (shop_login, password_hash, active, created_at) VALUES (?,?,1,?)",
+        "INSERT INTO shops (shop_login, password_hash, active, created_at) VALUES (%s,%s,1,%s) RETURNING id",
         (shop_login, generate_password_hash(password), now().strftime("%Y-%m-%d %H:%M:%S")),
     )
-    shop_id = c.lastrowid
+    shop_id = c.fetchone()["id"]
     # give this shop its own settings row, defaulting shop_name to the login
-    c.execute("INSERT INTO settings (shop_id, shop_name) VALUES (?,?)", (shop_id, shop_login))
+    c.execute("INSERT INTO settings (shop_id, shop_name) VALUES (%s,%s)", (shop_id, shop_login))
     conn.commit()
     conn.close()
     return shop_id
@@ -185,13 +230,13 @@ def delete_shop(shop_id):
     c = conn.cursor()
     # delete bill_items belonging to this shop's bills
     c.execute("""DELETE FROM bill_items WHERE bill_id IN
-                 (SELECT id FROM bills WHERE shop_id=?)""", (shop_id,))
-    c.execute("DELETE FROM bills WHERE shop_id=?", (shop_id,))
-    c.execute("DELETE FROM coupons WHERE shop_id=?", (shop_id,))
-    c.execute("DELETE FROM menu_items WHERE shop_id=?", (shop_id,))
-    c.execute("DELETE FROM customers WHERE shop_id=?", (shop_id,))
-    c.execute("DELETE FROM settings WHERE shop_id=?", (shop_id,))
-    c.execute("DELETE FROM shops WHERE id=?", (shop_id,))
+                 (SELECT id FROM bills WHERE shop_id=%s)""", (shop_id,))
+    c.execute("DELETE FROM bills WHERE shop_id=%s", (shop_id,))
+    c.execute("DELETE FROM coupons WHERE shop_id=%s", (shop_id,))
+    c.execute("DELETE FROM menu_items WHERE shop_id=%s", (shop_id,))
+    c.execute("DELETE FROM customers WHERE shop_id=%s", (shop_id,))
+    c.execute("DELETE FROM settings WHERE shop_id=%s", (shop_id,))
+    c.execute("DELETE FROM shops WHERE id=%s", (shop_id,))
     conn.commit()
     conn.close()
 
@@ -200,7 +245,7 @@ def get_settings(shop_id=None):
     if shop_id is None:
         shop_id = current_shop_id()
     conn = get_db()
-    row = conn.execute("SELECT * FROM settings WHERE shop_id = ?", (shop_id,)).fetchone()
+    row = conn.execute("SELECT * FROM settings WHERE shop_id = %s", (shop_id,)).fetchone()
     conn.close()
     return dict(row) if row else {}
 
@@ -222,14 +267,14 @@ def compute_customer_stats(shop_id=None):
         shop_id = current_shop_id()
 
     conn = get_db()
-    customers = conn.execute("SELECT * FROM customers WHERE shop_id=?", (shop_id,)).fetchall()
+    customers = conn.execute("SELECT * FROM customers WHERE shop_id=%s", (shop_id,)).fetchall()
     settings = get_settings(shop_id)
     today = now()
 
     stats = []
     for cust in customers:
         bills = conn.execute(
-            "SELECT * FROM bills WHERE customer_id = ? AND shop_id=? ORDER BY created_at",
+            "SELECT * FROM bills WHERE customer_id = %s AND shop_id=%s ORDER BY created_at",
             (cust["id"], shop_id),
         ).fetchall()
         visits = len(bills)
@@ -304,7 +349,7 @@ def issue_coupon(shop_id, customer_id, reason, dtype, value, auto=False):
     conn.execute(
         """INSERT INTO coupons
            (shop_id, customer_id, code, reason, discount_type, discount_value, status, auto_generated, created_at)
-           VALUES (?,?,?,?,?,?,?,?,?)""",
+           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
         (shop_id, customer_id, code, reason, dtype, value, "Sent", 1 if auto else 0,
          now().strftime("%Y-%m-%d %H:%M:%S")),
     )
@@ -317,7 +362,7 @@ def had_recent_coupon(shop_id, customer_id, reason_prefix, cooldown_days):
     conn = get_db()
     row = conn.execute(
         """SELECT created_at FROM coupons
-           WHERE shop_id=? AND customer_id=? AND reason LIKE ?
+           WHERE shop_id=%s AND customer_id=%s AND reason LIKE %s
            ORDER BY id DESC LIMIT 1""",
         (shop_id, customer_id, reason_prefix + "%"),
     ).fetchone()
@@ -328,7 +373,7 @@ def had_recent_coupon(shop_id, customer_id, reason_prefix, cooldown_days):
 
 
 # ---------------------------------------------------------------------------
-# AUTOMATED COUPON ENGINE — now runs PER SHOP.
+# AUTOMATED COUPON ENGINE — runs PER SHOP.
 # ---------------------------------------------------------------------------
 def run_auto_coupon_engine(shop_id):
     settings = get_settings(shop_id)
@@ -362,12 +407,6 @@ def run_engine_all_shops():
     conn.close()
     for sid in shop_ids:
         run_auto_coupon_engine(sid)
-
-
-def start_scheduler():
-    scheduler = BackgroundScheduler(daemon=True)
-    scheduler.add_job(run_engine_all_shops, "interval", hours=24, next_run_time=now())
-    scheduler.start()
 
 
 # ---------------------------------------------------------------------------
@@ -410,7 +449,7 @@ def login():
         shop_login = request.form.get("shop_login", "").strip()
         password = request.form.get("password", "")
         conn = get_db()
-        shop = conn.execute("SELECT * FROM shops WHERE shop_login=?", (shop_login,)).fetchone()
+        shop = conn.execute("SELECT * FROM shops WHERE shop_login=%s", (shop_login,)).fetchone()
         conn.close()
         if shop and shop["active"] and check_password_hash(shop["password_hash"], password):
             session.clear()
@@ -500,9 +539,13 @@ ADMIN_PANEL_TEMPLATE = """
 
  <div class="card">
    <h3>💾 Database Backup</h3>
-   <p style="color:#666;font-size:13px;">Download a full copy of the database (all shops) for safekeeping.</p>
+   <p style="color:#666;font-size:13px;">
+     Download a full export of every shop's data (as JSON) for safekeeping.
+     Note: since this now runs on Postgres, your data already survives server
+     restarts/redeploys on its own — this is just an extra offline copy.
+   </p>
    <form method="get" action="{{ url_for('admin_backup_download') }}">
-     <button class="dl" type="submit">⬇️ Download Database Backup</button>
+     <button class="dl" type="submit">⬇️ Download Full Backup (JSON)</button>
    </form>
  </div>
 
@@ -569,7 +612,7 @@ def admin_create_shop():
         flash("Both a login name and password are required.", "error")
         return redirect(url_for("admin_panel"))
     conn = get_db()
-    exists = conn.execute("SELECT id FROM shops WHERE shop_login=?", (shop_login,)).fetchone()
+    exists = conn.execute("SELECT id FROM shops WHERE shop_login=%s", (shop_login,)).fetchone()
     conn.close()
     if exists:
         flash(f"A shop named '{shop_login}' already exists.", "error")
@@ -583,7 +626,7 @@ def admin_create_shop():
 @admin_required
 def admin_toggle_shop(shop_id):
     conn = get_db()
-    conn.execute("UPDATE shops SET active = 1 - active WHERE id=?", (shop_id,))
+    conn.execute("UPDATE shops SET active = 1 - active WHERE id=%s", (shop_id,))
     conn.commit()
     conn.close()
     flash("Shop status updated.", "success")
@@ -601,15 +644,32 @@ def admin_delete_shop(shop_id):
 @app.route("/admin/backup/download")
 @admin_required
 def admin_backup_download():
-    if not os.path.exists(DB):
-        flash("No database file found yet.", "error")
+    # With Postgres there's no local .db file to send anymore — the data
+    # already lives safely in the external Postgres instance and survives
+    # restarts/redeploys on its own. This exports every table as JSON
+    # instead, as an extra offline copy if you ever want one.
+    try:
+        conn = get_db()
+        tables = ["shops", "customers", "menu_items", "coupons", "bills", "bill_items", "settings"]
+        backup = {}
+        for t in tables:
+            rows = conn.execute(f"SELECT * FROM {t}").fetchall()
+            backup[t] = [dict(r) for r in rows]
+        conn.close()
+    except Exception as e:
+        flash(f"Backup failed: {e}", "error")
         return redirect(url_for("admin_panel"))
+
+    payload = json.dumps(backup, indent=2, default=str)
     timestamp = now().strftime("%Y-%m-%d_%H%M")
-    return send_file(DB, as_attachment=True, download_name=f"full_backup_{timestamp}.db")
+    return Response(
+        payload, mimetype="application/json",
+        headers={"Content-Disposition": f"attachment;filename=full_backup_{timestamp}.json"},
+    )
 
 
 # ---------------------------------------------------------------------------
-# ROUTES — DASHBOARD (all shop routes now require login + are scoped)
+# ROUTES — DASHBOARD (all shop routes require login + are scoped)
 # ---------------------------------------------------------------------------
 @app.route("/")
 @login_required
@@ -624,11 +684,11 @@ def dashboard():
     onetimer = [s for s in stats if s["segment"] == "One-timer"]
 
     conn = get_db()
-    coupons = conn.execute("SELECT * FROM coupons WHERE shop_id=?", (sid,)).fetchall()
+    coupons = conn.execute("SELECT * FROM coupons WHERE shop_id=%s", (sid,)).fetchall()
     redeemed_revenue = conn.execute("""
         SELECT COALESCE(SUM(bills.total),0) as rev FROM coupons
         JOIN bills ON coupons.redeemed_bill_id = bills.id
-        WHERE coupons.status = 'Redeemed' AND coupons.shop_id=?
+        WHERE coupons.status = 'Redeemed' AND coupons.shop_id=%s
     """, (sid,)).fetchone()["rev"]
     conn.close()
 
@@ -659,7 +719,7 @@ def menu():
         if name and price:
             conn = get_db()
             conn.execute(
-                "INSERT INTO menu_items (shop_id, name, price, category, active) VALUES (?,?,?,?,1)",
+                "INSERT INTO menu_items (shop_id, name, price, category, active) VALUES (%s,%s,%s,%s,1)",
                 (sid, name, float(price), category),
             )
             conn.commit()
@@ -668,7 +728,7 @@ def menu():
         return redirect(url_for("menu"))
 
     conn = get_db()
-    items = conn.execute("SELECT * FROM menu_items WHERE shop_id=? ORDER BY category, name", (sid,)).fetchall()
+    items = conn.execute("SELECT * FROM menu_items WHERE shop_id=%s ORDER BY category, name", (sid,)).fetchall()
     conn.close()
     return render_template("index.html", page="menu", items=items, shop_login=session.get("shop_login"))
 
@@ -677,7 +737,7 @@ def menu():
 @login_required
 def menu_toggle(item_id):
     conn = get_db()
-    conn.execute("UPDATE menu_items SET active = 1 - active WHERE id=? AND shop_id=?",
+    conn.execute("UPDATE menu_items SET active = 1 - active WHERE id=%s AND shop_id=%s",
                  (item_id, current_shop_id()))
     conn.commit()
     conn.close()
@@ -688,7 +748,7 @@ def menu_toggle(item_id):
 @login_required
 def menu_delete(item_id):
     conn = get_db()
-    conn.execute("DELETE FROM menu_items WHERE id=? AND shop_id=?", (item_id, current_shop_id()))
+    conn.execute("DELETE FROM menu_items WHERE id=%s AND shop_id=%s", (item_id, current_shop_id()))
     conn.commit()
     conn.close()
     flash("Item removed from menu.", "success")
@@ -714,7 +774,7 @@ def billing():
         conn = get_db()
         c = conn.cursor()
 
-        items = c.execute("SELECT * FROM menu_items WHERE active=1 AND shop_id=?", (sid,)).fetchall()
+        items = c.execute("SELECT * FROM menu_items WHERE active=1 AND shop_id=%s", (sid,)).fetchall()
         line_items = []
         subtotal = 0.0
         for item in items:
@@ -739,21 +799,23 @@ def billing():
             conn.close()
             return redirect(url_for("billing"))
 
-        cust = c.execute("SELECT * FROM customers WHERE phone=? AND shop_id=?", (phone, sid)).fetchone()
+        cust = c.execute("SELECT * FROM customers WHERE phone=%s AND shop_id=%s", (phone, sid)).fetchone()
         if cust is None:
-            c.execute("INSERT INTO customers (shop_id, phone, name, created_at) VALUES (?,?,?,?)",
-                      (sid, phone, name, now().strftime("%Y-%m-%d %H:%M:%S")))
-            customer_id = c.lastrowid
+            c.execute(
+                "INSERT INTO customers (shop_id, phone, name, created_at) VALUES (%s,%s,%s,%s) RETURNING id",
+                (sid, phone, name, now().strftime("%Y-%m-%d %H:%M:%S")),
+            )
+            customer_id = c.fetchone()["id"]
         else:
             customer_id = cust["id"]
             if name and not cust["name"]:
-                c.execute("UPDATE customers SET name=? WHERE id=?", (name, customer_id))
+                c.execute("UPDATE customers SET name=%s WHERE id=%s", (name, customer_id))
 
         discount = 0.0
         coupon_id = None
         if coupon_code:
             coupon = c.execute(
-                "SELECT * FROM coupons WHERE code=? AND customer_id=? AND shop_id=?",
+                "SELECT * FROM coupons WHERE code=%s AND customer_id=%s AND shop_id=%s",
                 (coupon_code, customer_id, sid),
             ).fetchone()
             if coupon and coupon["status"] != "Redeemed":
@@ -767,20 +829,21 @@ def billing():
         total = round(subtotal - discount, 2)
 
         c.execute(
-            "INSERT INTO bills (shop_id, customer_id, subtotal, discount, total, coupon_id, created_at) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO bills (shop_id, customer_id, subtotal, discount, total, coupon_id, created_at) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
             (sid, customer_id, subtotal, discount, total, coupon_id, now().strftime("%Y-%m-%d %H:%M:%S")),
         )
-        bill_id = c.lastrowid
+        bill_id = c.fetchone()["id"]
 
         for li in line_items:
             c.execute(
-                "INSERT INTO bill_items (bill_id, item_name, price, qty) VALUES (?,?,?,?)",
+                "INSERT INTO bill_items (bill_id, item_name, price, qty) VALUES (%s,%s,%s,%s)",
                 (bill_id, li["name"], li["price"], li["qty"]),
             )
 
         if coupon_id:
             c.execute(
-                "UPDATE coupons SET status='Redeemed', redeemed_at=?, redeemed_bill_id=? WHERE id=?",
+                "UPDATE coupons SET status='Redeemed', redeemed_at=%s, redeemed_bill_id=%s WHERE id=%s",
                 (now().strftime("%Y-%m-%d %H:%M:%S"), bill_id, coupon_id),
             )
 
@@ -789,7 +852,7 @@ def billing():
         return redirect(url_for("print_bill", bill_id=bill_id))
 
     conn = get_db()
-    items = conn.execute("SELECT * FROM menu_items WHERE active=1 AND shop_id=? ORDER BY category, name", (sid,)).fetchall()
+    items = conn.execute("SELECT * FROM menu_items WHERE active=1 AND shop_id=%s ORDER BY category, name", (sid,)).fetchall()
     categories = sorted(set(i["category"] for i in items))
     conn.close()
     item_prices = {item["id"]: {"price": item["price"], "name": item["name"]} for item in items}
@@ -807,13 +870,13 @@ def api_coupon_check():
         return jsonify({"valid": False, "message": ""})
 
     conn = get_db()
-    cust = conn.execute("SELECT * FROM customers WHERE phone=? AND shop_id=?", (phone, sid)).fetchone()
+    cust = conn.execute("SELECT * FROM customers WHERE phone=%s AND shop_id=%s", (phone, sid)).fetchone()
     if not cust:
         conn.close()
         return jsonify({"valid": False, "message": "New customer — no coupons on file yet."})
 
     coupon = conn.execute(
-        "SELECT * FROM coupons WHERE code=? AND customer_id=? AND shop_id=?", (code, cust["id"], sid)
+        "SELECT * FROM coupons WHERE code=%s AND customer_id=%s AND shop_id=%s", (code, cust["id"], sid)
     ).fetchone()
     conn.close()
 
@@ -894,15 +957,15 @@ RECEIPT_TEMPLATE = """
 def print_bill(bill_id):
     sid = current_shop_id()
     conn = get_db()
-    bill = conn.execute("SELECT * FROM bills WHERE id=? AND shop_id=?", (bill_id, sid)).fetchone()
+    bill = conn.execute("SELECT * FROM bills WHERE id=%s AND shop_id=%s", (bill_id, sid)).fetchone()
     if not bill:
         conn.close()
         abort(404)
-    customer = conn.execute("SELECT * FROM customers WHERE id=?", (bill["customer_id"],)).fetchone()
-    items = conn.execute("SELECT * FROM bill_items WHERE bill_id=?", (bill_id,)).fetchall()
+    customer = conn.execute("SELECT * FROM customers WHERE id=%s", (bill["customer_id"],)).fetchone()
+    items = conn.execute("SELECT * FROM bill_items WHERE bill_id=%s", (bill_id,)).fetchall()
     coupon = None
     if bill["coupon_id"]:
-        coupon = conn.execute("SELECT * FROM coupons WHERE id=?", (bill["coupon_id"],)).fetchone()
+        coupon = conn.execute("SELECT * FROM coupons WHERE id=%s", (bill["coupon_id"],)).fetchone()
     conn.close()
     settings = get_settings(sid)
     return render_template_string(RECEIPT_TEMPLATE, bill=bill, customer=customer,
@@ -912,17 +975,6 @@ def print_bill(bill_id):
 # ---------------------------------------------------------------------------
 # ROUTES — CUSTOMERS
 # ---------------------------------------------------------------------------
-# @app.route("/customers")
-# @login_required
-# def customers():
-#     stats = compute_customer_stats(current_shop_id())
-#     stats.sort(key=lambda s: -s["total_spend"])
-#     filter_seg = request.args.get("segment", "All")
-#     if filter_seg != "All":
-#         stats = [s for s in stats if s["segment"] == filter_seg]
-#     return render_template("index.html", page="customers", stats=stats,
-#                            filter_seg=filter_seg, shop_login=session.get("shop_login"))
-
 @app.route("/customers")
 @login_required
 def customers():
@@ -936,7 +988,7 @@ def customers():
     conn = get_db()
     coupon_rows = conn.execute("""
         SELECT * FROM coupons
-        WHERE shop_id=? AND status != 'Redeemed'
+        WHERE shop_id=%s AND status != 'Redeemed'
         ORDER BY id DESC
     """, (sid,)).fetchall()
     conn.close()
@@ -961,15 +1013,15 @@ def customers():
 def customer_detail(customer_id):
     sid = current_shop_id()
     conn = get_db()
-    cust = conn.execute("SELECT * FROM customers WHERE id=? AND shop_id=?", (customer_id, sid)).fetchone()
+    cust = conn.execute("SELECT * FROM customers WHERE id=%s AND shop_id=%s", (customer_id, sid)).fetchone()
     if not cust:
         conn.close()
         abort(404)
     bills = conn.execute(
-        "SELECT * FROM bills WHERE customer_id=? AND shop_id=? ORDER BY created_at DESC", (customer_id, sid)
+        "SELECT * FROM bills WHERE customer_id=%s AND shop_id=%s ORDER BY created_at DESC", (customer_id, sid)
     ).fetchall()
     coupons_list = conn.execute(
-        "SELECT * FROM coupons WHERE customer_id=? AND shop_id=? ORDER BY id DESC", (customer_id, sid)
+        "SELECT * FROM coupons WHERE customer_id=%s AND shop_id=%s ORDER BY id DESC", (customer_id, sid)
     ).fetchall()
     conn.close()
 
@@ -1008,7 +1060,7 @@ def coupons_page():
     all_coupons = conn.execute("""
         SELECT coupons.*, customers.phone, customers.name
         FROM coupons JOIN customers ON coupons.customer_id = customers.id
-        WHERE coupons.shop_id=?
+        WHERE coupons.shop_id=%s
         ORDER BY coupons.id DESC
     """, (sid,)).fetchall()
     conn.close()
@@ -1028,13 +1080,13 @@ def settings_page():
     if request.method == "POST":
         conn = get_db()
         conn.execute("""UPDATE settings SET
-            shop_name=?, shop_address=?, shop_phone=?, footer_message=?,
-            vip_min_visits=?, vip_window_days=?, vip_top_percent=?,
-            lapsing_days=?, lapsing_min_visits=?, new_days=?, onetimer_days=?,
-            auto_coupon_enabled=?, auto_coupon_cooldown_days=?,
-            at_risk_discount_type=?, at_risk_discount_value=?,
-            vip_discount_type=?, vip_discount_value=?
-            WHERE shop_id=?""", (
+            shop_name=%s, shop_address=%s, shop_phone=%s, footer_message=%s,
+            vip_min_visits=%s, vip_window_days=%s, vip_top_percent=%s,
+            lapsing_days=%s, lapsing_min_visits=%s, new_days=%s, onetimer_days=%s,
+            auto_coupon_enabled=%s, auto_coupon_cooldown_days=%s,
+            at_risk_discount_type=%s, at_risk_discount_value=%s,
+            vip_discount_type=%s, vip_discount_value=%s
+            WHERE shop_id=%s""", (
             request.form["shop_name"], request.form["shop_address"],
             request.form["shop_phone"], request.form["footer_message"],
             int(request.form["vip_min_visits"]), int(request.form["vip_window_days"]),
@@ -1065,7 +1117,7 @@ def export_csv():
     sid = current_shop_id()
     stats = compute_customer_stats(sid)
     conn = get_db()
-    coupons_all = conn.execute("SELECT * FROM coupons WHERE shop_id=?", (sid,)).fetchall()
+    coupons_all = conn.execute("SELECT * FROM coupons WHERE shop_id=%s", (sid,)).fetchall()
     conn.close()
 
     coupon_map = {}
@@ -1104,7 +1156,6 @@ def export_csv():
                     headers={"Content-Disposition": "attachment;filename=customer_report.csv"})
 
 
-
 import urllib.request
 
 SELF_URL = os.environ.get("SELF_URL", "https://shoployal.onrender.com/")
@@ -1122,10 +1173,9 @@ def start_scheduler():
     scheduler = BackgroundScheduler(daemon=True)
     # existing job: run coupon engine every 24 hours
     scheduler.add_job(run_engine_all_shops, "interval", hours=24, next_run_time=now())
-    # NEW: self-ping every 10 minutes to prevent sleep
+    # self-ping every 10 minutes to prevent sleep
     scheduler.add_job(ping_self, "interval", minutes=10, next_run_time=now())
     scheduler.start()
-
 
 
 if __name__ == "__main__":

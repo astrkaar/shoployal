@@ -1,3 +1,4 @@
 Flask
 Werkzeug
 APScheduler
+psycopg2-binary

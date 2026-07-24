@@ -257,8 +257,12 @@ def now():
     return datetime.now()
 
 
-def parse(dt_str):
-    return datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+def parse(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
 
 
 def compute_customer_stats(shop_id=None):

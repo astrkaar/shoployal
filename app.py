@@ -42,9 +42,10 @@ load_dotenv()
 #   5. Pattern-aware encoding for coupon codes, discount types
 # ============================================================
 
-# Marker byte sequence that NEVER appears in normal UTF-8 user data
-# Uses control characters that web forms cannot submit
-_COMPRESS_MARKER = '\x00\x01\x02\xFF'
+# Marker sequence that NEVER appears in normal UTF-8 user data
+# Uses only printable characters (NO NUL bytes) to stay PostgreSQL-safe
+# Chosen: Unicode Private Use Area chars that won't appear in real data
+_COMPRESS_MARKER = '\uE000\uE001\uE002\uE003'
 _COMPRESS_VERSION = 'C'
 
 # String interning pool - maps repeated strings to small integer IDs
@@ -108,10 +109,38 @@ def _intern_get(idx):
     return _intern_pool_reverse.get(idx, '')
 
 
+def _is_timestamp_string(value):
+    """Check if a string looks like a timestamp - these should NOT be compressed"""
+    if len(value) < 8 or len(value) > 30:
+        return False
+    # Common timestamp patterns: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, etc.
+    timestamp_patterns = [
+        r'^\d{4}-\d{2}-\d{2}$',
+        r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$',
+        r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$',
+        r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$',
+        r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+$',
+        r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z$',
+        r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$',
+    ]
+    for pattern in timestamp_patterns:
+        if re.match(pattern, value):
+            return True
+    return False
+
+
+def _is_numeric_string(value):
+    """Check if a string is purely numeric (phone, price, etc.)"""
+    return value.isdigit()
+
+
 def _compress_text(value, strategy='auto'):
     """
     Compress a single text value using the specified strategy.
     Returns a string that can be stored in any TEXT column.
+    
+    IMPORTANT: Never compress timestamp-like strings as they may be
+    inserted into timestamp/date columns and must remain parseable.
     """
     if value is None:
         return None
@@ -126,6 +155,10 @@ def _compress_text(value, strategy='auto'):
     if value == '':
         return value
 
+    # CRITICAL: Never compress timestamp strings - they must remain valid for SQL
+    if _is_timestamp_string(value):
+        return value
+
     # Strategy-specific compression
     if strategy == 'timestamp':
         return _compress_timestamp(value)
@@ -138,6 +171,9 @@ def _compress_text(value, strategy='auto'):
     elif strategy == 'zlib':
         return _compress_zlib(value)
     else:  # 'auto' - pick best strategy
+        # Don't compress numeric strings (they're already compact)
+        if _is_numeric_string(value):
+            return value
         if len(value) <= 30:
             return _compress_intern(value)
         else:

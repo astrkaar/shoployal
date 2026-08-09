@@ -1158,7 +1158,7 @@
 
     {% elif page == 'customer_detail' %}
       <h2>{{ customer.name or customer.phone }}</h2>
-      <p class="subtitle">{{ customer.phone }} · Customer since {{ customer.created_at[:10] }}</p>
+      <p class="subtitle">{{ customer.phone }} · Customer since {{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at is not none else '—' }}</p>
 
       {% if s %}
       <div class="grid">
@@ -1199,7 +1199,7 @@
           {% for c in coupons_list %}
           <tr><td><b>{{ c.code }}</b></td><td>{{ c.reason }}{% if c.auto_generated %}<span class="badge auto">Auto</span>{% endif %}</td>
               <td>{{ '%.0f'|format(c.discount_value) }}{{ '%' if c.discount_type=='percent' else ' ₹' }} off</td>
-              <td><span class="badge {{ c.status }}">{{ c.status }}</span></td><td>{{ c.created_at[:10] }}</td>
+               <td><span class="badge {{ c.status }}">{{ c.status }}</span></td><td>{{ c.created_at.strftime('%Y-%m-%d') if c.created_at is not none else '—' }}</td>
               <td>
                 {% if c.status != 'Redeemed' %}
                 <button type="button" class="wa-btn"

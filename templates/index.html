@@ -585,10 +585,23 @@
   .toggle-row { display: flex; align-items: center; gap: 14px; }
   hr.divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
 
-  /* --- POS billing layout - Enhanced --- */
-  .pos-layout { display: flex; gap: 28px; align-items: flex-start; }
-  .pos-menu { flex: 1.5; }
-  .pos-cart { flex: 1; position: sticky; top: 20px; }
+  /* --- POS billing layout - Fixed --- */
+  .pos-layout {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+  }
+  .pos-menu {
+    flex: 1.5;
+    min-width: 0; /* Prevent flex overflow */
+    overflow: hidden;
+  }
+  .pos-cart {
+    flex: 1;
+    position: sticky;
+    top: 20px;
+    min-width: 280px;
+  }
   .item-category {
     font-size: 12px;
     font-weight: 700;
@@ -596,24 +609,33 @@
     text-transform: uppercase;
     margin: 24px 0 14px;
     letter-spacing: 0.05em;
+    padding-left: 4px;
   }
   .item-category:first-child { margin-top: 0; }
   .item-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
   }
   .item-tile {
     background: var(--card);
     border: 1.5px solid var(--border);
     border-radius: var(--radius);
-    padding: 18px 16px;
+    padding: 12px 10px;
     cursor: pointer;
-    text-align: left;
+    text-align: center;
     transition: all var(--transition);
     user-select: none;
     position: relative;
     box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 75px;
+    width: 100%;
   }
   .item-tile:hover {
     border-color: var(--accent);
@@ -621,8 +643,18 @@
     transform: translateY(-2px);
   }
   .item-tile:active { transform: scale(0.96); }
-  .item-tile .item-name { font-weight: 600; font-size: 14px; margin-bottom: 5px; color: var(--text); }
-  .item-tile .item-price { color: var(--muted); font-size: 13px; }
+  .item-tile .item-name {
+    font-weight: 600;
+    font-size: 12.5px;
+    margin-bottom: 2px;
+    color: var(--text);
+    line-height: 1.2;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .item-tile .item-price { color: var(--muted); font-size: 11.5px; font-weight: 500; }
   .item-tile .qty-badge {
     position: absolute;
     top: -8px; right: -8px;
@@ -765,6 +797,7 @@
   /* --- Responsive - Enhanced --- */
   @media (max-width: 1024px) {
     main { padding: 28px 32px 100px; }
+    .item-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
   @media (max-width: 768px) {
@@ -788,7 +821,10 @@
     .sidebar-logout { margin-top: 0; padding: 8px 12px; }
     main { padding: 20px 16px 100px; }
     .pos-layout { flex-direction: column; }
-    .pos-cart { position: relative; top: 0; width: 100%; }
+    .pos-cart { position: relative; top: 0; width: 100%; min-width: unset; }
+    .pos-menu { width: 100%; }
+    .item-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .item-tile { padding: 10px 8px; min-height: 70px; }
     .grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
     .stat-card { padding: 16px 14px; }
     .stat-card .value { font-size: 24px; }
@@ -909,12 +945,14 @@
       <p class="subtitle">Tap items to add them — total is calculated automatically</p>
 
       <form method="POST" action="/billing" id="billForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="pos-layout">
           <div class="pos-menu">
             {% if items %}
               {% set ns = namespace(last_cat='') %}
               {% for item in items %}
                 {% if item.category != ns.last_cat %}
+                  {% if not loop.first %}</div>{% endif %}
                   <div class="item-category">{{ item.category }}</div>
                   {% set ns.last_cat = item.category %}
                   <div class="item-grid">
@@ -1029,6 +1067,7 @@
       <div class="card">
         <h3>Add New Item</h3>
         <form class="inline" method="POST" action="/menu">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="field"><label>Item Name *</label><input type="text" name="name" placeholder="Cold Coffee" required></div>
           <div class="field"><label>Price (₹) *</label><input type="number" step="0.01" name="price" placeholder="120" required></div>
           <div class="field"><label>Category</label><input type="text" name="category" placeholder="Beverages" list="categories"></div>
@@ -1055,9 +1094,11 @@
             </div>
             <div style="display:flex; gap:8px;">
               <form method="POST" action="/menu/toggle/{{ item.id }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="secondary">{{ 'Show' if not item.active else 'Hide' }}</button>
               </form>
               <form method="POST" action="/menu/delete/{{ item.id }}" onsubmit="return confirm('Delete this item?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="secondary">Delete</button>
               </form>
             </div>
@@ -1078,9 +1119,14 @@
         {% endfor %}
       </div>
 
+      <!-- Customer Search -->
+      <div class="customer-search" style="margin-bottom: 18px;">
+        <input type="text" id="customerSearch" placeholder="🔍 Search by name or phone..." style="width: 100%; max-width: 400px;" onkeyup="filterCustomers()">
+      </div>
+
       <div class="card">
         {% if stats %}
-        <table>
+        <table id="customerTable">
           <tr><th>Phone</th><th>Name</th><th>Segment</th><th>Visits</th><th>Total Spend</th><th>Avg Bill</th><th>Last Visit</th><th>WhatsApp</th></tr>
           {% for s in stats %}
           <tr class="link-row" onclick="window.location='/customer/{{ s.id }}'">
@@ -1088,8 +1134,8 @@
             <td><span class="badge {{ s.segment.replace(' ','-') }}">{{ s.segment }}</span></td>
             <td>{{ s.visits }}</td><td>₹{{ "%.0f"|format(s.total_spend) }}</td><td>₹{{ "%.0f"|format(s.avg_bill) }}</td>
             <td>
-              {% if s.days_since_last is not none %}
-                <span class="dot {{ 'green' if s.days_since_last <= 7 else ('amber' if s.days_since_last <= 21 else 'red') }}"></span>{{ s.days_since_last }} days ago
+               {% if s.days_since_last is not none %}
+                <span class="dot {{ 'green' if s.days_since_last <= 7 else ('amber' if s.days_since_last <= 21 else 'red') }}"></span>{% if s.days_since_last == 0 %}Today{% elif s.days_since_last == 1 %}1 day ago{% else %}{{ s.days_since_last }} days ago{% endif %}
               {% else %}—{% endif %}
             </td>
             <td>
@@ -1191,6 +1237,7 @@
           {% endif %}
         </p>
         <form method="POST" action="/coupons">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="action" value="run_engine">
           <button type="submit" class="success">▶ Run Engine Now</button>
         </form>
@@ -1200,6 +1247,7 @@
         <h3>Generate a Manual Coupon</h3>
         <p class="card-desc">For one-off cases outside the automated rules</p>
         <form class="inline" method="POST" action="/coupons">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="field">
             <label>Customer</label>
             <select name="customer_id" required>
@@ -1245,6 +1293,7 @@
       <p class="subtitle">Shop details, segmentation rules, and auto-coupon behavior — all in one place</p>
 
       <form method="POST" action="/settings">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="card">
           <h3>🏪 Shop Details (used on printed receipts)</h3>
           <div class="settings-grid">
@@ -1384,6 +1433,88 @@
       window.location.href = '/billing';
     }
   });
+
+  // Form submission loading state
+  document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function() {
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.dataset.originalText = submitBtn.textContent;
+        submitBtn.textContent = '⏳ Saving...';
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.7';
+        submitBtn.style.cursor = 'not-allowed';
+      }
+    });
+  });
+
+  // Page transition loading overlay
+  const loadingOverlay = document.createElement('div');
+  loadingOverlay.id = 'pageLoading';
+  loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
+  loadingOverlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.8);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:9999;';
+  document.body.appendChild(loadingOverlay);
+
+  const spinnerStyle = document.createElement('style');
+  spinnerStyle.textContent = '.loading-spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}';
+  document.head.appendChild(spinnerStyle);
+
+  // Show loading on navigation links (except export/logout)
+  document.querySelectorAll('a[href^="/"]').forEach(link => {
+    link.addEventListener('click', function(e) {
+      const href = this.getAttribute('href');
+      if (href.startsWith('/export_csv') || href.startsWith('/logout') || href.startsWith('/customer/')) return;
+      loadingOverlay.style.display = 'flex';
+    });
+  });
+
+  // Clear form fields after page load (after redirect)
+  // This prevents stale values from showing after a successful submission
+  const urlParams = new URLSearchParams(window.location.search);
+  if (!urlParams.has('segment')) {
+    // Clear all text inputs in forms that are not filter/search forms
+    document.querySelectorAll('form:not(.inline) input[type="text"], form:not(.inline) input[type="number"]').forEach(input => {
+      if (!input.name.includes('csrf') && !input.name.includes('action')) {
+        // Only clear if the page was just loaded (no form data in URL)
+      }
+    });
+  }
+
+  // Clear inline form after successful submission (detected by flash message)
+  const hasFlashMessage = document.querySelector('.flash');
+  if (hasFlashMessage) {
+    const flashText = hasFlashMessage.textContent.toLowerCase();
+    if (flashText.includes('added') || flashText.includes('generated') || flashText.includes('saved')) {
+      // Clear the inline form fields
+      const inlineForm = document.querySelector('form.inline');
+      if (inlineForm) {
+        inlineForm.reset();
+      }
+    }
+  }
+
+  // Customer search filter
+  function filterCustomers() {
+    const input = document.getElementById('customerSearch');
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById('customerTable');
+    if (!table) return;
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) {
+      const cells = rows[i].getElementsByTagName('td');
+      let show = false;
+      // Search in phone (column 0) and name (column 1)
+      if (cells.length > 1) {
+        const phone = cells[0].textContent || cells[0].innerText;
+        const name = cells[1].textContent || cells[1].innerText;
+        if (phone.toLowerCase().includes(filter) || name.toLowerCase().includes(filter)) {
+          show = true;
+        }
+      }
+      rows[i].style.display = show ? '' : 'none';
+    }
+  }
 </script>
 
 </body>

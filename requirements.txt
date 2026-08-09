@@ -1,5 +1,7 @@
 Flask
 Werkzeug
+Flask-WTF
+WTForms
 APScheduler
 psycopg2-binary
 python-dotenv

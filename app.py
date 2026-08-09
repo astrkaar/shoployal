@@ -11,6 +11,7 @@ from flask import (
     Flask, render_template, render_template_string, request,
     redirect, url_for, Response, flash, jsonify, send_file, session, abort
 )
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -397,6 +398,9 @@ def _compress_params_for_insert(params, sql):
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key-before-real-deploy")
 
+# CSRF Protection
+csrf = CSRFProtect(app)
+
 # The master admin password. CHANGE THIS or set the ADMIN_PASSWORD env var.
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
 
@@ -563,6 +567,18 @@ def init_db():
         FOREIGN KEY(shop_id) REFERENCES shops(id)
     )""")
 
+    # -- INDEXES for performance -------------------------------------------
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_customers_shop ON customers(shop_id)""")
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone)""")
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_menu_items_shop ON menu_items(shop_id)""")
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_coupons_shop ON coupons(shop_id)""")
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_coupons_customer ON coupons(customer_id)""")
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code)""")
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_bills_shop ON bills(shop_id)""")
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_bills_customer ON bills(customer_id)""")
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_bills_created ON bills(created_at)""")
+    c.execute("""CREATE INDEX IF NOT EXISTS idx_bill_items_bill ON bill_items(bill_id)""")
+
     conn.commit()
     conn.close()
 
@@ -670,8 +686,8 @@ def compute_customer_stats(shop_id=None):
         avg_bill = total_spend / visits if visits else 0
         last_visit = parse(bills[-1]["created_at"]) if bills else None
         first_visit = parse(bills[0]["created_at"]) if bills else parse(cust["created_at"])
-        days_since_last = (today - last_visit).days if last_visit else None
-        days_since_first = (today - first_visit).days
+        days_since_last = max(0, (today - last_visit).days) if last_visit else None
+        days_since_first = max(0, (today - first_visit).days)
 
         visits_in_vip_window = sum(
             1 for b in bills
@@ -815,6 +831,7 @@ LOGIN_TEMPLATE = """
  .adminlink{display:block;text-align:center;margin-top:16px;font-size:12px;color:#888;text-decoration:none;}
 </style></head><body>
  <form class="card" method="post">
+   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
    <h2>🏪 Shop Login</h2>
    <p class="sub">Sign in to manage your shop</p>
    {% with messages = get_flashed_messages() %}
@@ -825,7 +842,7 @@ LOGIN_TEMPLATE = """
    <label>Password</label>
    <input name="password" type="password" required>
    <button type="submit">Log In</button>
-  
+
  </form>
 </body></html>
 """
@@ -849,7 +866,7 @@ def login():
         else:
             flash("Invalid shop name or password.")
         return redirect(url_for("login"))
-    return render_template_string(LOGIN_TEMPLATE)
+    return render_template_string(LOGIN_TEMPLATE, csrf_token=csrf_token())
 
 
 @app.route("/logout")
@@ -874,6 +891,7 @@ ADMIN_LOGIN_TEMPLATE = """
  .flash{background:#fee2e2;color:#b91c1c;padding:10px;border-radius:8px;font-size:13px;margin-bottom:12px;}
 </style></head><body>
  <form class="card" method="post">
+   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
    <h2>🔐 Admin Login</h2>
    {% with messages = get_flashed_messages() %}
      {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
@@ -973,7 +991,7 @@ def admin_login():
             return redirect(url_for("admin_panel"))
         flash("Wrong admin password.")
         return redirect(url_for("admin_login"))
-    return render_template_string(ADMIN_LOGIN_TEMPLATE)
+    return render_template_string(ADMIN_LOGIN_TEMPLATE, csrf_token=csrf_token())
 
 
 @app.route("/admin/logout")

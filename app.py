@@ -11,7 +11,6 @@ from flask import (
     Flask, render_template, render_template_string, request,
     redirect, url_for, Response, flash, jsonify, send_file, session, abort
 )
-from flask_wtf.csrf import CSRFProtect
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -397,9 +396,6 @@ def _compress_params_for_insert(params, sql):
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key-before-real-deploy")
-
-# CSRF Protection
-csrf = CSRFProtect(app)
 
 # The master admin password. CHANGE THIS or set the ADMIN_PASSWORD env var.
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
@@ -848,7 +844,6 @@ LOGIN_TEMPLATE = """
 
 
 @app.route("/login", methods=["GET", "POST"])
-@csrf.exempt
 def login():
     if request.method == "POST":
         shop_login = request.form.get("shop_login", "").strip()
@@ -982,7 +977,6 @@ ADMIN_PANEL_TEMPLATE = """
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
-@csrf.exempt
 def admin_login():
     if request.method == "POST":
         if request.form.get("password") == ADMIN_PASSWORD:

@@ -943,7 +943,6 @@
       <p class="subtitle">Tap items to add them — total is calculated automatically</p>
 
       <form method="POST" action="/billing" id="billForm">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="pos-layout">
           <div class="pos-menu">
             {% if items %}
@@ -1065,7 +1064,6 @@
       <div class="card">
         <h3>Add New Item</h3>
         <form class="inline" method="POST" action="/menu">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="field"><label>Item Name *</label><input type="text" name="name" placeholder="Cold Coffee" required></div>
           <div class="field"><label>Price (₹) *</label><input type="number" step="0.01" name="price" placeholder="120" required></div>
           <div class="field"><label>Category</label><input type="text" name="category" placeholder="Beverages" list="categories"></div>
@@ -1092,11 +1090,9 @@
             </div>
             <div style="display:flex; gap:8px;">
               <form method="POST" action="/menu/toggle/{{ item.id }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="secondary">{{ 'Show' if not item.active else 'Hide' }}</button>
               </form>
               <form method="POST" action="/menu/delete/{{ item.id }}" onsubmit="return confirm('Delete this item?');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="secondary">Delete</button>
               </form>
             </div>
@@ -1234,7 +1230,6 @@
         <h3>Generate a Manual Coupon</h3>
         <p class="card-desc">For one-off cases outside the automated rules</p>
         <form class="inline" method="POST" action="/coupons">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="field">
             <label>Customer</label>
             <select name="customer_id" required>
@@ -1280,7 +1275,6 @@
       <p class="subtitle">Shop details, segmentation rules, and auto-coupon behavior — all in one place</p>
 
       <form method="POST" action="/settings">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="card">
           <h3>🏪 Shop Details (used on printed receipts)</h3>
           <div class="settings-grid">

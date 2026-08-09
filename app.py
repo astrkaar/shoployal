@@ -1106,7 +1106,6 @@ def dashboard():
         vip=vip, at_risk=at_risk, new=new, onetimer=onetimer, top_vip=top_vip,
         coupons_sent=len(coupons),
         coupons_redeemed=len([c for c in coupons if c["status"] == "Redeemed"]),
-        auto_coupons=len([c for c in coupons if c["auto_generated"]]),
         redeemed_revenue=redeemed_revenue,
     )
 
@@ -1577,8 +1576,6 @@ def ping_self():
 
 def start_scheduler():
     scheduler = BackgroundScheduler(daemon=True)
-    # existing job: run coupon engine every 24 hours
-    scheduler.add_job(run_engine_all_shops, "interval", hours=24, next_run_time=now())
     # self-ping every 10 minutes to prevent sleep
     scheduler.add_job(ping_self, "interval", minutes=10, next_run_time=now())
     scheduler.start()

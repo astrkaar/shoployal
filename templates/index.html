@@ -910,11 +910,9 @@
       </div>
 
       <div class="card">
-        <h3>🤖 Automated Coupon Engine</h3>
-        <p class="card-desc">Runs automatically every 24 hours in the background — scans segments and issues coupons with no manual work.</p>
+        <h3>🎟️ Coupon Stats</h3>
         <div class="grid" style="margin-bottom:0;">
           <div class="stat-card"><div class="value" data-count="{{ coupons_sent }}">0</div><div class="label">Coupons Sent</div></div>
-          <div class="stat-card"><div class="value" data-count="{{ auto_coupons }}">0</div><div class="label">Auto-Generated</div></div>
           <div class="stat-card"><div class="value" data-count="{{ coupons_redeemed }}">0</div><div class="label">Redeemed</div></div>
           <div class="stat-card money"><div class="value">₹<span data-count="{{ "%.0f"|format(redeemed_revenue) }}">0</span></div><div class="label">Revenue From Redemptions</div></div>
         </div>
@@ -1228,19 +1226,8 @@
       <p class="subtitle">The engine auto-detects who should get a coupon — no manual picking required</p>
 
       <div class="card">
-        <h3>🤖 Automated Engine</h3>
-        <p class="card-desc">
-          {% if settings.auto_coupon_enabled %}
-            Enabled — runs automatically every 24 hours. At-risk customers get a {{ "%.0f"|format(settings.at_risk_discount_value) }}{{ '%' if settings.at_risk_discount_type=='percent' else ' ₹' }} win-back coupon; VIPs get a {{ "%.0f"|format(settings.vip_discount_value) }}{{ '%' if settings.vip_discount_type=='percent' else ' ₹' }} thank-you reward. No repeat coupon to the same person within {{ settings.auto_coupon_cooldown_days }} days.
-          {% else %}
-            Currently disabled — turn it on in Settings to automate this.
-          {% endif %}
-        </p>
-        <form method="POST" action="/coupons">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="hidden" name="action" value="run_engine">
-          <button type="submit" class="success">▶ Run Engine Now</button>
-        </form>
+        <h3>🎟️ Coupons</h3>
+        <p class="card-desc">Generate manual coupons for your customers. Select a customer, choose discount type and value, then generate.</p>
       </div>
 
       <div class="card">

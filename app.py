@@ -17,6 +17,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 import psycopg2
 import psycopg2.extras
+from dotenv import load_dotenv
+
+# Load the environment variables from the .env file
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key-before-real-deploy")

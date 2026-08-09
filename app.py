@@ -831,7 +831,6 @@ LOGIN_TEMPLATE = """
  .adminlink{display:block;text-align:center;margin-top:16px;font-size:12px;color:#888;text-decoration:none;}
 </style></head><body>
  <form class="card" method="post">
-   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
    <h2>🏪 Shop Login</h2>
    <p class="sub">Sign in to manage your shop</p>
    {% with messages = get_flashed_messages() %}
@@ -849,6 +848,7 @@ LOGIN_TEMPLATE = """
 
 
 @app.route("/login", methods=["GET", "POST"])
+@csrf.exempt
 def login():
     if request.method == "POST":
         shop_login = request.form.get("shop_login", "").strip()
@@ -866,7 +866,7 @@ def login():
         else:
             flash("Invalid shop name or password.")
         return redirect(url_for("login"))
-    return render_template_string(LOGIN_TEMPLATE, csrf_token=csrf_token())
+    return render_template_string(LOGIN_TEMPLATE)
 
 
 @app.route("/logout")
@@ -891,7 +891,6 @@ ADMIN_LOGIN_TEMPLATE = """
  .flash{background:#fee2e2;color:#b91c1c;padding:10px;border-radius:8px;font-size:13px;margin-bottom:12px;}
 </style></head><body>
  <form class="card" method="post">
-   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
    <h2>🔐 Admin Login</h2>
    {% with messages = get_flashed_messages() %}
      {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
@@ -983,6 +982,7 @@ ADMIN_PANEL_TEMPLATE = """
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
+@csrf.exempt
 def admin_login():
     if request.method == "POST":
         if request.form.get("password") == ADMIN_PASSWORD:
@@ -991,7 +991,7 @@ def admin_login():
             return redirect(url_for("admin_panel"))
         flash("Wrong admin password.")
         return redirect(url_for("admin_login"))
-    return render_template_string(ADMIN_LOGIN_TEMPLATE, csrf_token=csrf_token())
+    return render_template_string(ADMIN_LOGIN_TEMPLATE)
 
 
 @app.route("/admin/logout")

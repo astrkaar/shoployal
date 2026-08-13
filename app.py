@@ -398,7 +398,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key-before-real-deploy")
 
 # The master admin password. CHANGE THIS or set the ADMIN_PASSWORD env var.
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
@@ -814,31 +814,206 @@ def run_engine_all_shops():
 # ---------------------------------------------------------------------------
 LOGIN_TEMPLATE = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><title>Shop Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
- body{font-family:system-ui,Arial,sans-serif;background:#f4f5f7;display:flex;
-      align-items:center;justify-content:center;height:100vh;margin:0;}
- .card{background:#fff;padding:36px 32px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1);width:320px;}
- h2{margin:0 0 6px;} p.sub{margin:0 0 20px;color:#666;font-size:13px;}
- label{font-size:13px;font-weight:600;display:block;margin:12px 0 4px;}
- input{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;}
- button{width:100%;margin-top:18px;background:#4f46e5;color:#fff;border:none;
-        padding:11px;border-radius:8px;font-weight:600;font-size:15px;cursor:pointer;}
- .flash{background:#fee2e2;color:#b91c1c;padding:10px;border-radius:8px;font-size:13px;margin-bottom:12px;}
- .adminlink{display:block;text-align:center;margin-top:16px;font-size:12px;color:#888;text-decoration:none;}
-</style></head><body>
- <form class="card" method="post">
-   <h2>🏪 Shop Login</h2>
-   <p class="sub">Sign in to manage your shop</p>
-   {% with messages = get_flashed_messages() %}
-     {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
-   {% endwith %}
-   <label>Shop Login Name</label>
-   <input name="shop_login" autofocus required>
-   <label>Password</label>
-   <input name="password" type="password" required>
-   <button type="submit">Log In</button>
+  :root {
+    --bg: #f6f6f7;
+    --bg-gradient: linear-gradient(180deg, #fafafa 0%, #f2f2f3 100%);
+    --card: #ffffff;
+    --border: #e6e6e6;
+    --text: #141414;
+    --text-secondary: #4a4a4a;
+    --muted: #777777;
+    --accent: #000000;
+    --accent-hover: #333333;
+    --accent-light: #f5f5f5;
+    --accent-glow: rgba(0, 0, 0, 0.08);
+    --purple: #000000;
+    --card-solid: #ffffff;
+    --red: #e11d48;
+    --red-light: #fff1f2;
+    --green: #059669;
+    --green-solid: #10b981;
+    --radius-sm: 8px;
+    --radius: 12px;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(0, 0, 0, 0.05);
+    --transition-fast: 0.15s ease;
+    --transition: 0.25s ease;
+  }
 
- </form>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  
+.card {
+    background: var(--card-solid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition);
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-xl);
+  }
+
+  h2 {
+    margin: 0 0 12px;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text);
+    text-align: center;
+  }
+  
+  p.sub {
+    margin: 0 0 24px;
+    color: var(--text-secondary);
+    font-size: 16px;
+    text-align: center;
+  }
+  
+  label {
+    font-size: 15px;
+    font-weight: 600;
+    display: block;
+    margin: 16px 0 8px;
+    color: var(--text);
+  }
+  
+  input {
+    width: 100%;
+    padding: 16px 20px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    transition: var(--transition-fast);
+    background: transparent;
+  }
+  
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  
+button {
+    width: 100%;
+    margin-top: 24px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 16px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 17px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  button:hover {
+    background: var(--accent-hover);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .flash {
+    background: var(--red-light);
+    color: var(--red);
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    margin-bottom: 16px;
+    border-left: 4px solid var(--red);
+  }
+  
+  .adminlink {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  
+  .adminlink:hover {
+    color: var(--text-secondary);
+    text-decoration: underline;
+  }
+  
+  /* Mobile optimizations */
+  @media (max-width: 480px) {
+    .card {
+      padding: 24px 20px;
+      margin: 0 12px;
+    }
+    
+    h2 {
+      font-size: 22px;
+    }
+    
+    p.sub {
+      font-size: 15px;
+    }
+    
+    label {
+      font-size: 14px;
+    }
+    
+    input {
+      padding: 14px 16px;
+      font-size: 15px;
+    }
+    
+    button {
+      padding: 14px 16px;
+      font-size: 16px;
+    }
+  }
+</style></head><body>
+ <div class="layout">
+   <form class="card" method="post">
+     <h2>
+       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shop-icon">
+         <path d="M22 11.08V12a10 10 0 1 0-5.93-9.14"></path>
+         <path d="M2 4.72v3.28C2 8.83 3.56 11.94 5.24 13.62l3.66 1.36-.86 3.46a2 2 0 0 0 1.72 2h3.42a2 2 0 0 0 2-1.72l.86-3.46 3.66-1.36c1.68-1.32 3.24-2.38 4.52-2.86.5-0.16 1.05-0.16 1.55 0z"></path>
+       </svg>
+       Shop Login
+     </h2>
+     <p class="sub">Sign in to manage your shop</p>
+     {% with messages = get_flashed_messages() %}
+       {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
+     {% endwith %}
+     <label>Shop Login Name</label>
+     <input name="shop_login" autofocus required>
+     <label>Password</label>
+     <input name="password" type="password" required>
+     <button type="submit">Log In</button>
+     
+    
+   </form>
+ </div>
 </body></html>
 """
 
@@ -875,15 +1050,19 @@ def logout():
 # ---------------------------------------------------------------------------
 ADMIN_LOGIN_TEMPLATE = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><title>Admin Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
- body{font-family:system-ui,Arial,sans-serif;background:#1e293b;display:flex;
-      align-items:center;justify-content:center;height:100vh;margin:0;}
- .card{background:#fff;padding:36px 32px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);width:320px;}
- h2{margin:0 0 20px;}
- input{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;}
- button{width:100%;margin-top:18px;background:#0f172a;color:#fff;border:none;
-        padding:11px;border-radius:8px;font-weight:600;font-size:15px;cursor:pointer;}
- .flash{background:#fee2e2;color:#b91c1c;padding:10px;border-radius:8px;font-size:13px;margin-bottom:12px;}
+ body{font-family:system-ui,Arial,sans-serif;background:#f6f6f7;display:flex;
+      align-items:center;justify-content:center;height:100vh;margin:0;padding:16px;}
+ .card{background:#fff;padding:36px 32px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);
+       width:100%;max-width:340px;border:1px solid #e6e6e6;}
+ h2{margin:0 0 20px;color:#141414;}
+ input{width:100%;padding:12px 14px;border:1px solid #e6e6e6;border-radius:8px;box-sizing:border-box;font-size:15px;}
+ input:focus{outline:none;border-color:#000;box-shadow:0 0 0 3px rgba(0,0,0,.05);}
+ button{width:100%;margin-top:18px;background:#000;color:#fff;border:none;
+        padding:13px;border-radius:8px;font-weight:600;font-size:15px;cursor:pointer;}
+ button:hover{background:#333;}
+ .flash{background:#fff1f2;color:#e11d48;padding:10px;border-radius:8px;font-size:13px;margin-bottom:12px;border-left:4px solid #e11d48;}
 </style></head><body>
  <form class="card" method="post">
    <h2>🔐 Admin Login</h2>
@@ -907,9 +1086,12 @@ ADMIN_PANEL_TEMPLATE = """
  label{font-size:13px;font-weight:600;display:block;margin:10px 0 4px;}
  input{padding:9px;border:1px solid #ccc;border-radius:8px;}
  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
- button{background:#4f46e5;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:600;cursor:pointer;}
- button.danger{background:#dc2626;padding:6px 12px;font-size:13px;}
- button.dl{background:#059669;}
+  button{background:#000;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:600;cursor:pointer;}
+  button:hover{background:#333;}
+  button.danger{background:#e11d48;padding:6px 12px;font-size:13px;}
+  button.danger:hover{background:#be123c;}
+  button.dl{background:#059669;}
+  button.dl:hover{background:#047857;}
  table{width:100%;border-collapse:collapse;margin-top:12px;}
  th,td{text-align:left;padding:10px;border-bottom:1px solid #eee;font-size:14px;}
  .flash{padding:10px;border-radius:8px;font-size:13px;margin-bottom:12px;}

@@ -4,50 +4,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#6366f1">
+<meta name="theme-color" content="#000000">
 <title>ShopLoyal — Customer Retention Dashboard</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
   :root {
-    --bg: #f0f2f7;
-    --bg-gradient: linear-gradient(135deg, #e8ecf3 0%, #f0f2f7 50%, #eae8f5 100%);
-    --card: rgba(255, 255, 255, 0.92);
+    --bg: #f6f6f7;
+    --bg-gradient: linear-gradient(180deg, #fafafa 0%, #f2f2f3 100%);
+    --card: #ffffff;
     --card-solid: #ffffff;
-    --border: rgba(232, 236, 241, 0.8);
-    --text: #1a1d2e;
-    --text-secondary: #3d4268;
-    --muted: #6b7194;
-    --accent: #6366f1;
-    --accent-hover: #4f46e5;
-    --accent-light: #eef0ff;
-    --accent-glow: rgba(99, 102, 241, 0.15);
-    --green: #0d9;
+    --border: #e6e6e6;
+    --text: #141414;
+    --text-secondary: #4a4a4a;
+    --muted: #777777;
+    --accent: #000000;
+    --accent-hover: #333333;
+    --accent-light: #f5f5f5;
+    --accent-glow: rgba(0, 0, 0, 0.08);
+    --green: #059669;
     --green-solid: #10b981;
     --green-light: #ecfdf5;
     --green-glow: rgba(16, 185, 129, 0.15);
-    --red: #f43f5e;
+    --red: #e11d48;
     --red-light: #fff1f2;
-    --red-glow: rgba(244, 63, 94, 0.12);
-    --amber: #f59e0b;
+    --red-glow: rgba(225, 29, 72, 0.12);
+    --amber: #d97706;
     --amber-light: #fffbeb;
-    --amber-glow: rgba(245, 158, 11, 0.12);
-    --purple: #8b5cf6;
-    --purple-light: #f5f3ff;
-    --blue: #3b82f6;
+    --amber-glow: rgba(217, 119, 6, 0.12);
+    --purple: #000000;
+    --purple-light: #f5f5f5;
+    --blue: #2563eb;
     --blue-light: #eff6ff;
-    --radius-sm: 10px;
-    --radius: 16px;
-    --radius-lg: 20px;
-    --radius-xl: 24px;
-    --shadow-sm: 0 1px 3px rgba(20, 20, 43, 0.04);
-    --shadow: 0 2px 8px rgba(20, 20, 43, 0.04), 0 1px 2px rgba(20, 20, 43, 0.02);
-    --shadow-md: 0 4px 16px rgba(20, 20, 43, 0.06), 0 2px 6px rgba(20, 20, 43, 0.03);
-    --shadow-lg: 0 10px 30px rgba(20, 20, 43, 0.08), 0 4px 12px rgba(20, 20, 43, 0.04);
-    --shadow-xl: 0 20px 50px rgba(20, 20, 43, 0.1), 0 8px 20px rgba(20, 20, 43, 0.05);
-    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 14px;
+    --radius-xl: 16px;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(0, 0, 0, 0.05);
+    --transition-fast: 0.15s ease;
+    --transition: 0.25s ease;
+    --transition-slow: 0.4s ease;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -63,48 +63,14 @@
     min-height: 100vh;
   }
 
-  /* Animated background blobs */
-  body::before {
-    content: '';
-    position: fixed;
-    top: -200px;
-    right: -200px;
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 0;
-    animation: blobFloat 20s ease-in-out infinite;
-  }
-  body::after {
-    content: '';
-    position: fixed;
-    bottom: -300px;
-    left: -100px;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 0;
-    animation: blobFloat 25s ease-in-out infinite reverse;
-  }
+   /* Remove animated background blobs for a clean professional look */
 
-  @keyframes blobFloat {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(50px, -30px) scale(1.1); }
-    66% { transform: translate(-30px, 50px) scale(0.95); }
-  }
+   .layout { display: flex; min-height: 100vh; position: relative; z-index: 1; }
 
-  .layout { display: flex; min-height: 100vh; position: relative; z-index: 1; }
-
-  /* --- Sidebar - Glassmorphism --- */
+  /* --- Sidebar - Clean Professional --- */
   nav {
     width: 250px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--card-solid);
     border-right: 1px solid var(--border);
     padding: 28px 16px;
     position: sticky;
@@ -130,14 +96,14 @@
   /* --- Shop identity chip --- */
   .shop-chip {
     display: flex; align-items: center; gap: 12px;
-    background: linear-gradient(135deg, var(--accent-light) 0%, rgba(139, 92, 246, 0.08) 100%);
-    border: 1px solid rgba(99, 102, 241, 0.12);
+    background: var(--accent-light);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 12px 14px;
     margin: 0 0 24px;
     transition: box-shadow var(--transition);
   }
-  .shop-chip:hover { box-shadow: 0 0 20px var(--accent-glow); }
+  .shop-chip:hover { box-shadow: var(--shadow); }
   .shop-chip .avatar {
     width: 38px; height: 38px; border-radius: var(--radius-sm); flex-shrink: 0;
     background: linear-gradient(135deg, var(--accent), var(--purple));
@@ -171,7 +137,7 @@
     transition: height var(--transition-fast);
   }
   nav a:hover {
-    background: rgba(99, 102, 241, 0.06);
+    background: rgba(0, 0, 0, 0.04);
     color: var(--text);
   }
   nav a:hover::before { height: 60%; }
@@ -186,23 +152,23 @@
 
   .sidebar-quick-btn {
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    background: linear-gradient(135deg, var(--green-solid), #059669);
+    background: var(--accent);
     color: white; padding: 13px; border-radius: var(--radius-sm);
     text-decoration: none; font-weight: 600; font-size: 14px;
     margin-top: 12px;
     transition: all var(--transition);
-    box-shadow: 0 4px 14px var(--green-glow);
+    box-shadow: var(--shadow);
   }
   .sidebar-quick-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25);
+    background: var(--accent-hover);
+    box-shadow: var(--shadow-md);
   }
 
   .sidebar-logout {
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--accent-light);
     color: var(--red);
-    border: 1.5px solid rgba(244, 63, 94, 0.2);
+    border: 1px solid var(--border);
     padding: 11px; border-radius: var(--radius-sm); text-decoration: none;
     font-weight: 600; font-size: 13.5px; margin-top: 8px;
     transition: all var(--transition);
@@ -210,7 +176,6 @@
   .sidebar-logout:hover {
     background: var(--red-light);
     border-color: var(--red);
-    box-shadow: 0 4px 12px var(--red-glow);
   }
 
   /* --- Main Content --- */
@@ -243,26 +208,18 @@
   }
   .stat-card {
     background: var(--card);
-    backdrop-filter: blur(10px);
     border: 1px solid var(--border);
-    border-top: 4px solid transparent;
-    border-radius: var(--radius-lg);
+    border-top: 3px solid transparent;
+    border-radius: var(--radius);
     padding: 22px 20px;
     box-shadow: var(--shadow);
     transition: all var(--transition);
     position: relative;
     overflow: hidden;
   }
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 50%);
-    pointer-events: none;
-  }
   .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
   }
   .stat-card .value {
     font-size: 30px;
@@ -289,9 +246,8 @@
   /* --- Cards - Enhanced --- */
   .card {
     background: var(--card);
-    backdrop-filter: blur(10px);
     border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius);
     padding: 26px 28px;
     margin-bottom: 24px;
     box-shadow: var(--shadow);
@@ -312,6 +268,11 @@
   }
 
   /* --- Tables - Enhanced --- */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-sm);
+  }
   table {
     width: 100%;
     border-collapse: collapse;
@@ -332,8 +293,8 @@
     border-bottom: 1px solid rgba(241, 245, 249, 0.8);
     transition: background var(--transition-fast);
   }
-  tr:nth-child(even) td { background: rgba(250, 251, 253, 0.5); }
-  tr:hover td { background: rgba(99, 102, 241, 0.03); }
+  tr:nth-child(even) td { background: rgba(250, 251, 253, 0.6); }
+  tr:hover td { background: rgba(0, 0, 0, 0.03); }
   tr.link-row { cursor: pointer; transition: all var(--transition-fast); }
   tr.link-row:hover { transform: scale(1.002); }
 
@@ -388,17 +349,17 @@
     font-family: inherit;
     transition: all var(--transition-fast);
   }
-  input:hover, select:hover, textarea:hover { border-color: #c4c9d4; }
+  input:hover, select:hover, textarea:hover { border-color: #cfcfcf; }
   input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px var(--accent-glow);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
     background: #fff;
   }
 
-  /* --- Buttons - Enhanced --- */
+  /* --- Buttons - Professional --- */
   button {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    background: var(--accent);
     color: white;
     border: none;
     padding: 12px 22px;
@@ -407,31 +368,34 @@
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition);
-    box-shadow: 0 4px 12px var(--accent-glow);
+    box-shadow: var(--shadow-sm);
     font-family: inherit;
   }
   button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.25);
+    background: var(--accent-hover);
+    box-shadow: var(--shadow);
   }
-  button:active { transform: translateY(0) scale(0.98); }
+  button:active { transform: scale(0.98); }
 
   button.secondary {
-    background: rgba(241, 245, 249, 0.9);
-    color: var(--text-secondary);
-    box-shadow: var(--shadow-sm);
+    background: var(--accent-light);
+    color: var(--text);
+    border: 1px solid var(--border);
+    box-shadow: none;
   }
   button.secondary:hover {
-    background: #e2e8f0;
-    box-shadow: var(--shadow);
+    background: #e9e9e9;
+    border-color: #d1d1d1;
+    box-shadow: none;
   }
 
   button.success {
-    background: linear-gradient(135deg, var(--green-solid), #059669);
-    box-shadow: 0 4px 12px var(--green-glow);
+    background: var(--green-solid);
+    box-shadow: var(--shadow-sm);
   }
   button.success:hover {
-    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.25);
+    background: #059669;
+    box-shadow: var(--shadow);
   }
 
   a.btn-link {
@@ -520,21 +484,20 @@
   .segment-filters a:hover {
     border-color: var(--accent);
     color: var(--accent);
-    box-shadow: 0 4px 12px var(--accent-glow);
-    transform: translateY(-1px);
+    box-shadow: var(--shadow);
   }
   .segment-filters a.active {
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    background: var(--accent);
     color: white;
     border-color: transparent;
-    box-shadow: 0 4px 14px var(--accent-glow);
+    box-shadow: var(--shadow);
   }
 
   .export-btn {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    background: linear-gradient(135deg, var(--green-solid), #059669);
+    background: var(--accent);
     color: white;
     padding: 13px 24px;
     border-radius: var(--radius-sm);
@@ -542,11 +505,11 @@
     font-weight: 600;
     font-size: 14px;
     transition: all var(--transition);
-    box-shadow: 0 4px 14px var(--green-glow);
+    box-shadow: var(--shadow-sm);
   }
   .export-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+    background: var(--accent-hover);
+    box-shadow: var(--shadow);
   }
 
   .settings-grid {
@@ -559,7 +522,7 @@
     font-size: 13px;
     margin-top: 20px;
     line-height: 1.7;
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    background: var(--accent-light);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 18px 20px;
@@ -570,7 +533,7 @@
     font-size: 14px;
     padding: 32px 20px;
     text-align: center;
-    background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(241, 245, 249, 0.5));
+    background: var(--accent-light);
     border-radius: var(--radius);
     border: 1px dashed var(--border);
   }
@@ -639,8 +602,7 @@
   }
   .item-tile:hover {
     border-color: var(--accent);
-    box-shadow: var(--shadow-md), 0 0 20px var(--accent-glow);
-    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
   }
   .item-tile:active { transform: scale(0.96); }
   .item-tile .item-name {
@@ -658,7 +620,7 @@
   .item-tile .qty-badge {
     position: absolute;
     top: -8px; right: -8px;
-    background: linear-gradient(135deg, var(--accent), var(--purple));
+    background: var(--accent);
     color: white;
     border-radius: 50%;
     width: 26px; height: 26px;
@@ -667,7 +629,7 @@
     justify-content: center;
     font-size: 12px;
     font-weight: 700;
-    box-shadow: 0 4px 12px var(--accent-glow);
+    box-shadow: var(--shadow-md);
     animation: popIn 0.2s ease-out;
   }
   @keyframes popIn {
@@ -684,7 +646,7 @@
     font-size: 14px;
     transition: all var(--transition-fast);
   }
-  .cart-line:hover { background: rgba(99, 102, 241, 0.02); }
+  .cart-line:hover { background: rgba(0, 0, 0, 0.02); }
   .cart-line .qty-controls { display: flex; align-items: center; gap: 10px; }
   .qty-btn {
     width: 28px; height: 28px;
@@ -731,14 +693,14 @@
     border-bottom: 1px solid rgba(241, 245, 249, 0.8);
     transition: background var(--transition-fast);
   }
-  .menu-item-row:hover { background: rgba(99, 102, 241, 0.02); }
+  .menu-item-row:hover { background: rgba(0, 0, 0, 0.02); }
 
-  /* --- Floating Action Button (FAB) - Enhanced --- */
+  /* --- Floating Action Button (FAB) - Professional --- */
   .fab {
     position: fixed;
     bottom: 36px;
     right: 36px;
-    background: linear-gradient(135deg, var(--green-solid), #059669);
+    background: var(--accent);
     color: white;
     width: 62px;
     height: 62px;
@@ -748,14 +710,15 @@
     justify-content: center;
     font-size: 30px;
     text-decoration: none;
-    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+    box-shadow: var(--shadow-lg);
     transition: all var(--transition);
     z-index: 100;
     border: none;
   }
   .fab:hover {
-    transform: scale(1.1) rotate(90deg);
-    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.5);
+    background: var(--accent-hover);
+    transform: scale(1.06);
+    box-shadow: var(--shadow-xl);
   }
 
   /* --- Loading skeleton animation --- */
@@ -795,45 +758,216 @@
   }
 
   /* --- Responsive - Enhanced --- */
-  @media (max-width: 1024px) {
-    main { padding: 28px 32px 100px; }
-    .item-grid { grid-template-columns: repeat(2, 1fr); }
-  }
+   @media (max-width: 1024px) {
+     nav { width: 200px; }
+     main { padding: 28px 32px 100px; }
+     .item-grid { grid-template-columns: repeat(2, 1fr); }
+   }
 
-  @media (max-width: 768px) {
-    .layout { flex-direction: column; }
-    nav {
-      width: 100%;
-      height: auto;
-      position: relative;
-      flex-direction: row;
-      overflow-x: auto;
-      padding: 14px 16px;
-      align-items: center;
-      gap: 8px;
-      -webkit-overflow-scrolling: touch;
-    }
-    nav h1, nav .tagline, .sidebar-spacer, .sidebar-quick-btn, .shop-chip .info { display: none; }
-    nav a { white-space: nowrap; padding: 8px 12px; font-size: 13px; }
-    nav a.active::before { display: none; }
-    nav a.active { border-radius: 8px; }
-    .shop-chip { margin: 0 8px 0 0; padding: 6px; }
-    .sidebar-logout { margin-top: 0; padding: 8px 12px; }
-    main { padding: 20px 16px 100px; }
-    .pos-layout { flex-direction: column; }
-    .pos-cart { position: relative; top: 0; width: 100%; min-width: unset; }
-    .pos-menu { width: 100%; }
-    .item-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .item-tile { padding: 10px 8px; min-height: 70px; }
-    .grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-    .stat-card { padding: 16px 14px; }
-    .stat-card .value { font-size: 24px; }
-    .card { padding: 18px 16px; }
-    form.inline { flex-direction: column; }
-    form.inline .field { width: 100%; }
-    input, select, textarea { width: 100%; min-width: unset; }
-    .fab { bottom: 20px; right: 20px; width: 56px; height: 56px; font-size: 26px; }
-  }
+   @media (max-width: 768px) {
+     .layout { 
+       display: flex; 
+       flex-direction: column; 
+       min-height: 100vh;
+     }
+      nav {
+        width: 100%;
+        height: 64px;
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--card-solid);
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 0;
+        margin: 0;
+        z-index: 1000;
+        border-top: 1px solid var(--border);
+        box-sizing: border-box;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      nav h1, nav .tagline, nav .shop-chip, nav .sidebar-spacer, nav .sidebar-quick-btn { display: none; }
+      nav a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        min-width: 52px;
+        padding: 8px 10px;
+        font-size: 10px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: var(--transition-fast);
+        min-height: 64px;
+        gap: 2px;
+        white-space: nowrap;
+        box-sizing: border-box;
+        border-radius: 0;
+        margin-bottom: 0;
+        overflow: hidden;
+      }
+      nav a::before { display: none; }
+     nav a:hover { 
+       color: var(--accent);
+       background: var(--accent-light);
+     }
+     nav a.active {
+       color: var(--accent);
+       background: var(--accent-light);
+       font-weight: 600;
+     }
+      nav a svg {
+        width: 24px;
+        height: 24px;
+        margin-bottom: 2px;
+        flex-shrink: 0;
+      }
+      nav a .nav-label {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1.1;
+      }
+      nav .sidebar-logout {
+        flex: 0 0 auto;
+        min-width: 52px;
+        padding: 8px 10px;
+        font-size: 10px;
+        color: var(--red);
+        border: none;
+        border-radius: 0;
+        margin-top: 0;
+        gap: 2px;
+        flex-direction: column;
+        min-height: 64px;
+        white-space: nowrap;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      nav .sidebar-logout:hover {
+        background: var(--red-light);
+        box-shadow: none;
+      }
+      nav .sidebar-logout svg {
+        width: 24px;
+        height: 24px;
+        margin-bottom: 2px;
+        flex-shrink: 0;
+      }
+     .fab { 
+       position: fixed;
+       bottom: 80px; 
+       right: 20px; 
+       width: 56px; 
+       height: 56px; 
+       font-size: 24px;
+       border-radius: 50%;
+       box-shadow: var(--shadow-lg);
+     }
+     main {
+       flex: 1;
+       width: 100%;
+       padding: 20px 16px;
+       padding-bottom: 100px; /* Space for bottom nav + fab */
+       box-sizing: border-box;
+       max-width: 100%;
+     }
+     .pos-layout { flex-direction: column; }
+     .pos-cart { position: relative; top: 0; width: 100%; min-width: 0; }
+     .pos-menu { width: 100%; }
+     .item-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+     .item-tile { 
+       padding: 16px 12px; 
+       min-height: 90px;
+       border-radius: var(--radius-sm);
+       transition: var(--transition-fast);
+       width: 100%;
+       box-sizing: border-box;
+     }
+     .item-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+     .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+     .stat-card { 
+       padding: 18px 14px; 
+       border-radius: var(--radius-sm);
+       transition: var(--transition-fast);
+       box-sizing: border-box;
+     }
+     .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+     .stat-card .value { font-size: 24px; font-weight: 700; }
+     .card { 
+       padding: 20px 16px; 
+       border-radius: var(--radius);
+       box-shadow: var(--shadow-sm);
+       width: 100%;
+       box-sizing: border-box;
+       overflow: hidden;
+     }
+     .card .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+     .card table { min-width: 560px; }
+     form.inline { flex-direction: column; gap: 16px; }
+     form.inline .field { width: 100%; }
+     input, select, textarea {
+       width: 100%;
+       min-height: 48px;
+       padding: 12px 16px;
+       border: 1px solid var(--border);
+       border-radius: var(--radius-sm);
+       font-size: 16px;
+       transition: var(--transition-fast);
+       box-sizing: border-box;
+       max-width: 100%;
+     }
+     input:focus, select:focus, textarea:focus {
+       outline: 2px solid var(--accent);
+       border-color: var(--accent);
+     }
+     .btn, .wa-btn {
+       min-height: 48px;
+       padding: 12px 24px;
+       font-size: 16px;
+       border-radius: var(--radius-sm);
+       font-weight: 500;
+       transition: var(--transition-fast);
+       display: inline-flex;
+       align-items: center;
+       justify-content: center;
+       gap: 8px;
+     }
+     .btn { 
+       background: var(--accent);
+       color: white;
+       border: none;
+     }
+     .btn:hover { background: var(--accent-hover); }
+     .wa-btn {
+       background: var(--green-solid);
+       color: white;
+       border: none;
+     }
+     .wa-btn:hover { background: #059669; }
+     .settings-grid { grid-template-columns: 1fr; gap: 12px; }
+     .settings-grid .field { grid-column: span 1 !important; }
+     .hint, .empty { font-size: 13px; padding: 16px 14px; }
+     .segment-filters { gap: 6px; }
+     .segment-filters a { padding: 10px 14px; font-size: 12px; }
+   }
+
+   @media (max-width: 480px) {
+     .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+     .stat-card .value { font-size: 22px; }
+     .item-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+     .item-tile { padding: 14px 10px; min-height: 80px; }
+     h2 { font-size: 24px; }
+     .subtitle { font-size: 13.5px; }
+   }
 
   /* --- Print styles --- */
   @media print {
@@ -879,17 +1013,44 @@
       </div>
     </div>
 
-    <a href="/" class="{{ 'active' if page=='dashboard' }}">📊 Dashboard</a>
-    <a href="/billing" class="{{ 'active' if page in ['billing'] }}">🧾 New Bill</a>
-    <a href="/menu" class="{{ 'active' if page=='menu' }}">🍽️ Menu Items</a>
-    <a href="/customers" class="{{ 'active' if page in ['customers','customer_detail'] }}">👥 Customers</a>
-    <a href="/coupons" class="{{ 'active' if page=='coupons' }}">🎟️ Coupons</a>
-    <a href="/settings" class="{{ 'active' if page=='settings' }}">⚙️ Settings</a>
-    <a href="/export_csv">⬇️ Export CSV</a>
+    <a href="/" class="{{ 'active' if page=='dashboard' }}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <span class="nav-label">Dashboard</span>
+    </a>
+    <a href="/billing" class="{{ 'active' if page in ['billing'] }}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-11 9 9 2-11z"></path></svg>
+      <span class="nav-label">New Bill</span>
+    </a>
+    <a href="/menu" class="{{ 'active' if page=='menu' }}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22l-6.09-3.4L2 9.27l5-4.87L12 2z"></path></svg>
+      <span class="nav-label">Menu Items</span>
+    </a>
+    <a href="/customers" class="{{ 'active' if page in ['customers','customer_detail'] }}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span class="nav-label">Customers</span>
+    </a>
+    <a href="/coupons" class="{{ 'active' if page=='coupons' }}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <span class="nav-label">Coupons</span>
+    </a>
+    <a href="/settings" class="{{ 'active' if page=='settings' }}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
+      <span class="nav-label">Settings</span>
+    </a>
+    <a href="/export_csv">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      <span class="nav-label">Export CSV</span>
+    </a>
     
     <div class="sidebar-spacer"></div>
-    <a href="/billing" class="sidebar-quick-btn">➕ New Bill</a>
-    <a href="/logout" class="sidebar-logout">🚪 Log Out</a>
+    <a href="/billing" class="sidebar-quick-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      New Bill
+    </a>
+    <a href="/logout" class="sidebar-logout">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><line x1="12" y1="17" x2="12" y2="13"></line></svg>
+      <span class="nav-label">Log Out</span>
+    </a>
   </nav>
   <main>
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -921,18 +1082,22 @@
       <div class="card">
         <h3>⭐ Top 3 VIP Customers</h3>
         {% if top_vip %}
-        <table><tr><th>Phone</th><th>Name</th><th>Visits</th><th>Total Spend</th></tr>
-        {% for s in top_vip %}<tr><td>{{ s.phone }}</td><td>{{ s.name }}</td><td>{{ s.visits }}</td><td>₹{{ "%.0f"|format(s.total_spend) }}</td></tr>{% endfor %}
-        </table>
+        <div class="table-responsive">
+          <table><tr><th>Phone</th><th>Name</th><th>Visits</th><th>Total Spend</th></tr>
+          {% for s in top_vip %}<tr><td>{{ s.phone }}</td><td>{{ s.name }}</td><td>{{ s.visits }}</td><td>₹{{ "%.0f"|format(s.total_spend) }}</td></tr>{% endfor %}
+          </table>
+        </div>
         {% else %}<div class="empty">No VIP customers yet — add some bills to get started.</div>{% endif %}
       </div>
 
       <div class="card">
         <h3>⚠️ Customers About to Churn</h3>
         {% if at_risk %}
-        <table><tr><th>Phone</th><th>Name</th><th>Visits</th><th>Days Since Last Visit</th></tr>
-        {% for s in at_risk %}<tr><td>{{ s.phone }}</td><td>{{ s.name }}</td><td>{{ s.visits }}</td><td>{{ s.days_since_last }}</td></tr>{% endfor %}
-        </table>
+        <div class="table-responsive">
+          <table><tr><th>Phone</th><th>Name</th><th>Visits</th><th>Days Since Last Visit</th></tr>
+          {% for s in at_risk %}<tr><td>{{ s.phone }}</td><td>{{ s.name }}</td><td>{{ s.visits }}</td><td>{{ s.days_since_last }}</td></tr>{% endfor %}
+          </table>
+        </div>
         {% else %}<div class="empty">No lapsing customers right now. 🎉</div>{% endif %}
       </div>
 
@@ -1115,46 +1280,54 @@
 
       <!-- Customer Search -->
       <div class="customer-search" style="margin-bottom: 18px;">
-        <input type="text" id="customerSearch" placeholder="🔍 Search by name or phone..." style="width: 100%; max-width: 400px;" onkeyup="filterCustomers()">
+        <input type="text" id="customerSearch" placeholder="🔍 Search by name or phone..." style="width: 100%; padding: 12px 16px;" onkeyup="filterCustomers()">
       </div>
 
-      <div class="card">
-        {% if stats %}
-        <table id="customerTable">
-          <tr><th>Phone</th><th>Name</th><th>Segment</th><th>Visits</th><th>Total Spend</th><th>Avg Bill</th><th>Last Visit</th><th>WhatsApp</th></tr>
-          {% for s in stats %}
-          <tr class="link-row" onclick="window.location='/customer/{{ s.id }}'">
-            <td>{{ s.phone }}</td><td>{{ s.name }}</td>
-            <td><span class="badge {{ s.segment.replace(' ','-') }}">{{ s.segment }}</span></td>
-            <td>{{ s.visits }}</td><td>₹{{ "%.0f"|format(s.total_spend) }}</td><td>₹{{ "%.0f"|format(s.avg_bill) }}</td>
-            <td>
-               {% if s.days_since_last is not none %}
-                <span class="dot {{ 'green' if s.days_since_last <= 7 else ('amber' if s.days_since_last <= 21 else 'red') }}"></span>{% if s.days_since_last == 0 %}Today{% elif s.days_since_last == 1 %}1 day ago{% else %}{{ s.days_since_last }} days ago{% endif %}
-              {% else %}—{% endif %}
-            </td>
-            <td>
-              {% set cp = active_coupons.get(s.id) %}
-              {% if cp %}
-                <button type="button" class="wa-btn"
-                  data-phone="{{ s.phone }}"
-                  data-message="Hi {{ s.name if s.name != '—' else 'there' }}! 🎉 Here is your {{ cp.offer }} coupon at {{ shop_name }}: {{ cp.code }}. Show this at billing to redeem. See you soon!"
-                  onclick="sendWhatsAppStop(event, this.dataset.phone, this.dataset.message)">
-                  💬
-                </button>
-              {% else %}
-                <button type="button" class="wa-btn muted"
-                  data-phone="{{ s.phone }}"
-                  data-message="Hi {{ s.name if s.name != '—' else 'there' }}! Thanks for visiting {{ shop_name }}. We hope to see you again soon! 😊"
-                  onclick="sendWhatsAppStop(event, this.dataset.phone, this.dataset.message)">
-                  💬
-                </button>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </table>
-        {% else %}<div class="empty">No customers in this segment.</div>{% endif %}
-      </div>
+        <div class="card">
+          <div class="table-responsive">
+            {% if stats %}
+            <table id="customerTable">
+              <tr><th>Phone</th><th>Name</th><th>Segment</th><th>Visits</th><th>Total Spend</th><th>Avg Bill</th><th>Last Visit</th><th>WhatsApp</th></tr>
+              {% for s in stats %}
+              <tr class="link-row" onclick="window.location='/customer/{{ s.id }}'">
+                <td>{{ s.phone }}</td><td>{{ s.name }}</td>
+                <td><span class="badge {{ s.segment.replace(' ','-') }}">{{ s.segment }}</span></td>
+                <td>{{ s.visits }}</td><td>₹{{ "%.0f"|format(s.total_spend) }}</td><td>₹{{ "%.0f"|format(s.avg_bill) }}</td>
+                <td>
+                   {% if s.days_since_last is not none %}
+                    <span class="dot {{ 'green' if s.days_since_last <= 7 else ('amber' if s.days_since_last <= 21 else 'red') }}"></span>{% if s.days_since_last == 0 %}Today{% elif s.days_since_last == 1 %}1 day ago{% else %}{{ s.days_since_last }} days ago{% endif %}
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% set cp = active_coupons.get(s.id) %}
+                  {% if cp %}
+                    <button type="button" class="wa-btn"
+                      data-phone="{{ s.phone }}"
+                      data-message="Hi {{ s.name if s.name != '—' else 'there' }}! 🎉 Here is your {{ cp.offer }} coupon at {{ shop_name }}: {{ cp.code }}. Show this at billing to redeem. See you soon!"
+                      onclick="sendWhatsAppStop(event, this.dataset.phone, this.dataset.message)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 2 2 0 0 1 2.14 0 2 2 0 0 1 1.31.51 2 2 0 0 1 .51 1.31z"></path>
+                        <line x1="23" y1="1" x2="17" y2="8"></line>
+                      </svg>
+                    </button>
+                  {% else %}
+                    <button type="button" class="wa-btn muted"
+                      data-phone="{{ s.phone }}"
+                      data-message="Hi {{ s.name if s.name != '—' else 'there' }}! Thanks for visiting {{ shop_name }}. We hope to see you again soon! 😊"
+                      onclick="sendWhatsAppStop(event, this.dataset.phone, this.dataset.message)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 2 2 0 0 1 2.14 0 2 2 0 0 1 1.31.51 2 2 0 0 1 .51 1.31z"></path>
+                        <line x1="23" y1="1" x2="17" y2="8"></line>
+                      </svg>
+                    </button>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+            {% else %}<div class="empty">No customers in this segment.</div>{% endif %}
+          </div>
+        </div>
 
     {% elif page == 'customer_detail' %}
       <h2>{{ customer.name or customer.phone }}</h2>
@@ -1184,34 +1357,38 @@
         <h3>🕒 Visit Timeline</h3>
         <p class="card-desc">Every row below is a real timestamp from a saved bill. "Days since last visit" is recalculated fresh every time you open this page.</p>
         {% if bills %}
-        <table><tr><th>Date & Time</th><th>Subtotal</th><th>Discount</th><th>Total Paid</th></tr>
-          {% for b in bills %}
-          <tr><td>{{ b.created_at }}</td><td>₹{{ "%.0f"|format(b.subtotal) }}</td><td>{% if b.discount > 0 %}-₹{{ "%.0f"|format(b.discount) }}{% else %}—{% endif %}</td><td>₹{{ "%.0f"|format(b.total) }}</td></tr>
-          {% endfor %}
-        </table>
+        <div class="table-responsive">
+          <table><tr><th>Date & Time</th><th>Subtotal</th><th>Discount</th><th>Total Paid</th></tr>
+            {% for b in bills %}
+            <tr><td>{{ b.created_at }}</td><td>₹{{ "%.0f"|format(b.subtotal) }}</td><td>{% if b.discount > 0 %}-₹{{ "%.0f"|format(b.discount) }}{% else %}—{% endif %}</td><td>₹{{ "%.0f"|format(b.total) }}</td></tr>
+            {% endfor %}
+          </table>
+        </div>
         {% else %}<div class="empty">No visits recorded yet.</div>{% endif %}
       </div>
 
       <div class="card">
         <h3>🎟️ Coupon History</h3>
         {% if coupons_list %}
-        <table><tr><th>Code</th><th>Reason</th><th>Offer</th><th>Status</th><th>Issued</th><th>Send</th></tr>
-          {% for c in coupons_list %}
-          <tr><td><b>{{ c.code }}</b></td><td>{{ c.reason }}{% if c.auto_generated %}<span class="badge auto">Auto</span>{% endif %}</td>
-              <td>{{ '%.0f'|format(c.discount_value) }}{{ '%' if c.discount_type=='percent' else ' ₹' }} off</td>
-               <td><span class="badge {{ c.status }}">{{ c.status }}</span></td><td>{{ c.created_at.strftime('%Y-%m-%d') if c.created_at is not none else '—' }}</td>
-              <td>
-                {% if c.status != 'Redeemed' %}
-                <button type="button" class="wa-btn"
-                  data-phone="{{ customer.phone }}"
-                  data-message="Hi {{ customer.name if customer.name else 'there' }}! 🎉 Here is your {{ '%.0f'|format(c.discount_value) }}{{ '%' if c.discount_type=='percent' else ' ₹' }} off coupon at {{ settings.shop_name if settings else 'our shop' }}: {{ c.code }}. Show this at billing to redeem!"
-                  onclick="sendWhatsApp(this.dataset.phone, this.dataset.message)">
-                  💬
-                </button>
-                {% else %}—{% endif %}
-              </td></tr>
-          {% endfor %}
-        </table>
+        <div class="table-responsive">
+          <table><tr><th>Code</th><th>Reason</th><th>Offer</th><th>Status</th><th>Issued</th><th>Send</th></tr>
+            {% for c in coupons_list %}
+            <tr><td><b>{{ c.code }}</b></td><td>{{ c.reason }}{% if c.auto_generated %}<span class="badge auto">Auto</span>{% endif %}</td>
+                <td>{{ '%.0f'|format(c.discount_value) }}{{ '%' if c.discount_type=='percent' else ' ₹' }} off</td>
+                 <td><span class="badge {{ c.status }}">{{ c.status }}</span></td><td>{{ c.created_at.strftime('%Y-%m-%d') if c.created_at is not none else '—' }}</td>
+                <td>
+                  {% if c.status != 'Redeemed' %}
+                  <button type="button" class="wa-btn"
+                    data-phone="{{ customer.phone }}"
+                    data-message="Hi {{ customer.name if customer.name else 'there' }}! 🎉 Here is your {{ '%.0f'|format(c.discount_value) }}{{ '%' if c.discount_type=='percent' else ' ₹' }} off coupon at {{ settings.shop_name if settings else 'our shop' }}: {{ c.code }}. Show this at billing to redeem!"
+                    onclick="sendWhatsApp(this.dataset.phone, this.dataset.message)">
+                    💬
+                  </button>
+                  {% else %}—{% endif %}
+                </td></tr>
+            {% endfor %}
+          </table>
+        </div>
         {% else %}<div class="empty">No coupons issued to this customer yet.</div>{% endif %}
       </div>
 
@@ -1249,24 +1426,26 @@
       <div class="card">
         <h3>All Coupons</h3>
         {% if all_coupons %}
-        <table><tr><th>Code</th><th>Phone</th><th>Name</th><th>Offer</th><th>Reason</th><th>Status</th><th>Issued</th><th>Send</th></tr>
-          {% for c in all_coupons %}
-          <tr><td><b>{{ c.code }}</b></td><td>{{ c.phone }}</td><td>{{ c.name or '—' }}</td>
-            <td>{{ format_discount(c.discount_type, c.discount_value) }}</td>
-            <td>{{ c.reason }}{% if c.auto_generated %}<span class="badge auto">Auto</span>{% endif %}</td>
-            <td><span class="badge {{ c.status }}">{{ c.status }}</span></td><td>{{ c.created_at }}</td>
-            <td>
-              {% if c.status != 'Redeemed' %}
-              <button type="button" class="wa-btn"
-                data-phone="{{ c.phone }}"
-                data-message="Hi {{ c.name if c.name else 'there' }}! 🎉 Here is your {{ format_discount(c.discount_type, c.discount_value) }} coupon at {{ settings.shop_name }}: {{ c.code }}. Show this at billing to redeem!"
-                onclick="sendWhatsApp(this.dataset.phone, this.dataset.message)">
-                💬
-              </button>
-              {% else %}—{% endif %}
-            </td></tr>
-          {% endfor %}
-        </table>
+        <div class="table-responsive">
+          <table><tr><th>Code</th><th>Phone</th><th>Name</th><th>Offer</th><th>Reason</th><th>Status</th><th>Issued</th><th>Send</th></tr>
+            {% for c in all_coupons %}
+            <tr><td><b>{{ c.code }}</b></td><td>{{ c.phone }}</td><td>{{ c.name or '—' }}</td>
+              <td>{{ format_discount(c.discount_type, c.discount_value) }}</td>
+              <td>{{ c.reason }}{% if c.auto_generated %}<span class="badge auto">Auto</span>{% endif %}</td>
+              <td><span class="badge {{ c.status }}">{{ c.status }}</span></td><td>{{ c.created_at }}</td>
+              <td>
+                {% if c.status != 'Redeemed' %}
+                <button type="button" class="wa-btn"
+                  data-phone="{{ c.phone }}"
+                  data-message="Hi {{ c.name if c.name else 'there' }}! 🎉 Here is your {{ format_discount(c.discount_type, c.discount_value) }} coupon at {{ settings.shop_name }}: {{ c.code }}. Show this at billing to redeem!"
+                  onclick="sendWhatsApp(this.dataset.phone, this.dataset.message)">
+                  💬
+                </button>
+                {% else %}—{% endif %}
+              </td></tr>
+            {% endfor %}
+          </table>
+        </div>
         {% else %}<div class="empty">No coupons generated yet.</div>{% endif %}
       </div>
 
@@ -1307,7 +1486,7 @@
           <h3>🤖 Automated Coupon Engine</h3>
           <p class="card-desc">This replaces manually deciding who gets a coupon. It scans live segments and issues coupons on its own.</p>
           <div class="toggle-row" style="margin-bottom:16px;">
-            <input type="checkbox" name="auto_coupon_enabled" id="autoToggle" {{ 'checked' if settings.auto_coupon_enabled }} style="min-width:auto; width:18px; height:18px;">
+            <input type="checkbox" name="auto_coupon_enabled" id="autoToggle" {{ 'checked' if settings.auto_coupon_enabled }} style="width: 20px; height: 20px;">
             <label for="autoToggle" style="font-size:14px; color:var(--text); font-weight:500;">Enable automated coupon engine (runs every 24 hours)</label>
           </div>
           <div class="settings-grid">

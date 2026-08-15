@@ -1395,10 +1395,14 @@ def billing():
         discount = 0.0
         coupon_id = None
         if coupon_code:
-            coupon = c.execute(
-                "SELECT * FROM coupons WHERE code=%s AND customer_id=%s AND shop_id=%s",
-                (coupon_code, customer_id, sid),
-            ).fetchone()
+            coupons = c.execute(
+                "SELECT * FROM coupons WHERE customer_id=%s AND shop_id=%s",
+                (customer_id, sid),
+            ).fetchall()
+            coupon = next(
+                (co for co in coupons if (co["code"] or "").strip().upper() == coupon_code),
+                None,
+            )
             if coupon and coupon["status"] != "Redeemed":
                 discount = calc_discount(subtotal, coupon["discount_type"], coupon["discount_value"])
                 coupon_id = coupon["id"]
@@ -1456,10 +1460,11 @@ def api_coupon_check():
         conn.close()
         return jsonify({"valid": False, "message": "New customer — no coupons on file yet."})
 
-    coupon = conn.execute(
-        "SELECT * FROM coupons WHERE code=%s AND customer_id=%s AND shop_id=%s", (code, cust["id"], sid)
-    ).fetchone()
+    coupons = conn.execute(
+        "SELECT * FROM coupons WHERE customer_id=%s AND shop_id=%s", (cust["id"], sid)
+    ).fetchall()
     conn.close()
+    coupon = next((co for co in coupons if (co["code"] or "").strip().upper() == code), None)
 
     if not coupon:
         return jsonify({"valid": False, "message": "Coupon not found for this phone number."})
@@ -1471,6 +1476,72 @@ def api_coupon_check():
         "discount_type": coupon["discount_type"],
         "discount_value": coupon["discount_value"],
         "message": f"Valid — {format_discount(coupon['discount_type'], coupon['discount_value'])} will be applied.",
+    })
+
+
+@app.route("/api/phone_suggestions")
+@login_required
+def api_phone_suggestions():
+    sid = current_shop_id()
+    q = request.args.get("q", "").strip().lower()
+    if not q:
+        return jsonify({"suggestions": []})
+
+    conn = get_db()
+    customers = conn.execute(
+        "SELECT phone, name FROM customers WHERE shop_id=%s ORDER BY id DESC LIMIT 50",
+        (sid,),
+    ).fetchall()
+    conn.close()
+
+    results = []
+    for cu in customers:
+        phone = cu["phone"] or ""
+        name = cu["name"] or ""
+        if q in phone.lower() or q in name.lower():
+            results.append({"phone": phone, "name": name})
+        if len(results) >= 8:
+            break
+    return jsonify({"suggestions": results})
+
+
+@app.route("/api/customer_coupons")
+@login_required
+def api_customer_coupons():
+    sid = current_shop_id()
+    phone = request.args.get("phone", "").strip()
+    if not phone:
+        return jsonify({"customer": None, "coupons": []})
+
+    conn = get_db()
+    cust = conn.execute(
+        "SELECT id, phone, name FROM customers WHERE phone=%s AND shop_id=%s", (phone, sid)
+    ).fetchone()
+    if not cust:
+        conn.close()
+        return jsonify({"customer": None, "coupons": []})
+
+    rows = conn.execute(
+        "SELECT code, reason, discount_type, discount_value, status FROM coupons "
+        "WHERE customer_id=%s AND shop_id=%s ORDER BY id DESC",
+        (cust["id"], sid),
+    ).fetchall()
+    conn.close()
+
+    coupons = [
+        {
+            "code": r["code"],
+            "reason": r["reason"],
+            "discount_type": r["discount_type"],
+            "discount_value": r["discount_value"],
+            "discount_display": format_discount(r["discount_type"], r["discount_value"]),
+        }
+        for r in rows
+        if r["status"] != "Redeemed"
+    ]
+    return jsonify({
+        "customer": {"phone": cust["phone"], "name": cust["name"]},
+        "coupons": coupons,
     })
 
 

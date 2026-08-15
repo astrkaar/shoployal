@@ -558,12 +558,14 @@
     flex: 1.5;
     min-width: 0; /* Prevent flex overflow */
     overflow: hidden;
+    order: 1;
   }
   .pos-cart {
     flex: 1;
     position: sticky;
     top: 20px;
     min-width: 280px;
+    order: 2;
   }
   .item-category {
     font-size: 12px;
@@ -719,6 +721,107 @@
     background: var(--accent-hover);
     transform: scale(1.06);
     box-shadow: var(--shadow-xl);
+  }
+
+  /* --- Billing: phone suggestions + coupon selection --- */
+  .field-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    display: block;
+    margin: 14px 0 8px;
+  }
+  .suggest-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: var(--card-solid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    margin-top: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+  }
+  .suggest-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 14px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    box-shadow: none;
+    border-radius: 0;
+    min-height: 44px;
+  }
+  .suggest-item:last-child { border-bottom: none; }
+  .suggest-item:hover, .suggest-item:focus { background: var(--accent-light); }
+  .suggest-phone { font-weight: 600; }
+  .suggest-name { color: var(--muted); font-size: 12.5px; }
+
+  .coupon-area {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .coupon-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--accent-light);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    transition: all var(--transition-fast);
+    box-shadow: none;
+  }
+  .coupon-chip:hover { border-color: var(--accent); }
+  .coupon-chip.selected {
+    border-color: var(--accent);
+    background: var(--text);
+    color: #fff;
+  }
+  .coupon-chip.selected .chip-code { color: #cfcfcf; }
+  .coupon-chip.selected .chip-reason { color: #cfcfcf; }
+  .chip-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .chip-discount { font-weight: 700; font-size: 14px; }
+  .chip-code {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .chip-reason { font-size: 11.5px; color: var(--muted); text-align: right; }
+  .coupon-empty {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 14px;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--accent-light);
   }
 
   /* --- Loading skeleton animation --- */
@@ -880,9 +983,9 @@
        box-sizing: border-box;
        max-width: 100%;
      }
-     .pos-layout { flex-direction: column; }
-     .pos-cart { position: relative; top: 0; width: 100%; min-width: 0; }
-     .pos-menu { width: 100%; }
+      .pos-layout { flex-direction: column; }
+      .pos-cart { position: relative; top: 0; width: 100%; min-width: 0; order: 1; }
+      .pos-menu { width: 100%; order: 2; }
      .item-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
      .item-tile { 
        padding: 16px 12px; 
@@ -1105,10 +1208,40 @@
 
     {% elif page == 'billing' %}
       <h2>New Bill</h2>
-      <p class="subtitle">Tap items to add them — total is calculated automatically</p>
+      <p class="subtitle">Enter the customer, tap items, click a coupon to apply it</p>
 
       <form method="POST" action="/billing" id="billForm">
         <div class="pos-layout">
+          <div class="pos-cart">
+            <div class="card">
+              <h3>🧾 Customer &amp; Bill</h3>
+
+              <div class="field" style="margin-bottom:10px; position:relative;">
+                <label>Phone Number *</label>
+                <input type="text" name="phone" id="phoneInput" placeholder="Type phone or name…" autocomplete="off" required>
+                <div class="suggest-box" id="phoneSuggestions"></div>
+              </div>
+              <div class="field" style="margin-bottom:10px;">
+                <label>Name (optional)</label>
+                <input type="text" name="name" id="nameInput" placeholder="Rahul">
+              </div>
+
+              <label class="field-label">Available Coupons</label>
+              <div class="coupon-area" id="couponList">
+                <div class="coupon-empty" id="couponEmpty">Enter a phone number to see this customer's coupons</div>
+              </div>
+              <input type="hidden" name="coupon_code" id="couponCode">
+              <div id="couponStatus"></div>
+
+              <hr class="divider">
+              <div id="cartLines"><div class="empty" id="cartEmpty">No items added yet</div></div>
+              <div class="cart-total-row" id="discountRow" style="display:none;"><span>Discount</span><span id="discountAmt">−₹0</span></div>
+              <div class="cart-total-row"><span>Total</span><span id="cartTotal">₹0</span></div>
+
+              <button type="submit" style="width:100%; margin-top:16px;">Save & Print Bill</button>
+            </div>
+          </div>
+
           <div class="pos-menu">
             {% if items %}
               {% set ns = namespace(last_cat='') %}
@@ -1135,28 +1268,20 @@
               </div>
             {% endif %}
           </div>
-
-          <div class="pos-cart">
-            <div class="card">
-              <h3>🧾 Current Bill</h3>
-              <div id="cartLines"><div class="empty" id="cartEmpty">No items added yet</div></div>
-              <div class="cart-total-row"><span>Total</span><span id="cartTotal">₹0</span></div>
-
-              <hr class="divider">
-              <div class="field" style="margin-bottom:10px;"><label>Phone Number *</label><input type="text" name="phone" id="phoneInput" placeholder="9876543210" required></div>
-              <div class="field" style="margin-bottom:10px;"><label>Name (optional)</label><input type="text" name="name" placeholder="Rahul"></div>
-              <div class="field" style="margin-bottom:6px;"><label>Coupon Code (optional)</label><input type="text" name="coupon_code" id="couponInput" placeholder="SAVE-XXXXXX"></div>
-              <div id="couponStatus"></div>
-
-              <button type="submit" style="width:100%; margin-top:16px;">Save & Print Bill</button>
-            </div>
-          </div>
         </div>
       </form>
 
       <script>
         const prices = {{ item_prices | tojson }};
         const qtys = {};
+        let cartSubtotal = 0;
+        let selectedCoupon = null;
+
+        function esc(s) {
+          return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+          }[m]));
+        }
 
         function incrementItem(id) {
           qtys[id] = (qtys[id] || 0) + 1;
@@ -1178,47 +1303,165 @@
           const ids = Object.keys(qtys).filter(id => qtys[id] > 0);
           if (ids.length === 0) {
             container.innerHTML = '<div class="empty" id="cartEmpty">No items added yet</div>';
-            document.getElementById('cartTotal').textContent = '₹0';
+            cartSubtotal = 0;
+          } else {
+            let html = '';
+            let total = 0;
+            ids.forEach(id => {
+              const p = prices[id];
+              const lineTotal = p.price * qtys[id];
+              total += lineTotal;
+              html += `<div class="cart-line">
+                  <span>${esc(p.name)}</span>
+                  <div class="qty-controls">
+                    <button type="button" class="qty-btn" onclick="decrementItem(${id})">−</button>
+                    <span>${qtys[id]}</span>
+                    <button type="button" class="qty-btn" onclick="incrementItem(${id})">+</button>
+                    <span style="min-width:55px; text-align:right;">₹${lineTotal.toFixed(0)}</span>
+                  </div>
+                </div>`;
+            });
+            cartSubtotal = total;
+            container.innerHTML = html;
+          }
+          updateTotals();
+        }
+        function updateTotals() {
+          let discount = 0;
+          if (selectedCoupon) {
+            discount = selectedCoupon.dtype === 'percent'
+              ? cartSubtotal * selectedCoupon.value / 100
+              : Math.min(selectedCoupon.value, cartSubtotal);
+            discount = Math.round(discount * 100) / 100;
+          }
+          const finalTotal = Math.max(0, cartSubtotal - discount);
+          document.getElementById('cartTotal').textContent = '₹' + finalTotal.toFixed(0);
+          const row = document.getElementById('discountRow');
+          if (discount > 0) {
+            row.style.display = 'flex';
+            document.getElementById('discountAmt').textContent = '−₹' + discount.toFixed(0);
+          } else {
+            row.style.display = 'none';
+          }
+        }
+
+        // --- Phone suggestions (Google-style) ---
+        const phoneInput = document.getElementById('phoneInput');
+        const nameInput = document.getElementById('nameInput');
+        const suggestBox = document.getElementById('phoneSuggestions');
+        let suggestTimeout;
+
+        phoneInput.addEventListener('input', function() {
+          const q = this.value.trim();
+          clearTimeout(suggestTimeout);
+          if (q.replace(/\D/g, '').length >= 2) {
+            suggestTimeout = setTimeout(() => loadSuggestions(q), 200);
+          } else {
+            hideSuggestions();
+          }
+          const digits = q.replace(/\D/g, '');
+          clearTimeout(couponLoadTimeout);
+          if (digits.length >= 7) {
+            couponLoadTimeout = setTimeout(() => loadCoupons(this.value.trim()), 450);
+          } else {
+            clearCouponArea();
+          }
+        });
+
+        function loadSuggestions(q) {
+          fetch(`/api/phone_suggestions?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(data => {
+              if (!data.suggestions.length) { hideSuggestions(); return; }
+              renderSuggestions(data.suggestions);
+            })
+            .catch(() => hideSuggestions());
+        }
+        function renderSuggestions(list) {
+          suggestBox.innerHTML = '';
+          list.forEach(s => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'suggest-item';
+            item.innerHTML = `<span class="suggest-phone">${esc(s.phone)}</span>${s.name ? `<span class="suggest-name">${esc(s.name)}</span>` : ''}`;
+            item.addEventListener('click', () => {
+              phoneInput.value = s.phone;
+              if (s.name) nameInput.value = s.name;
+              hideSuggestions();
+              loadCoupons(s.phone);
+            });
+            suggestBox.appendChild(item);
+          });
+          suggestBox.style.display = 'block';
+        }
+        function hideSuggestions() { suggestBox.style.display = 'none'; }
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('.pos-cart .field')) hideSuggestions();
+        });
+
+        // --- Available coupons for the phone ---
+        let couponLoadTimeout;
+        function clearCouponArea() {
+          document.getElementById('couponList').innerHTML =
+            '<div class="coupon-empty" id="couponEmpty">Enter a phone number to see this customer\'s coupons</div>';
+          document.getElementById('couponStatus').innerHTML = '';
+          selectedCoupon = null;
+          document.getElementById('couponCode').value = '';
+          updateTotals();
+        }
+        function loadCoupons(phone) {
+          fetch(`/api/customer_coupons?phone=${encodeURIComponent(phone)}`)
+            .then(r => r.json())
+            .then(data => renderCoupons(data))
+            .catch(() => {});
+        }
+        function renderCoupons(data) {
+          const area = document.getElementById('couponList');
+          if (!data.customer) {
+            area.innerHTML = '<div class="coupon-empty">New customer — no coupons yet</div>';
+            return;
+          }
+          if (!data.coupons.length) {
+            area.innerHTML = '<div class="coupon-empty">No available coupons for this customer</div>';
             return;
           }
           let html = '';
-          let total = 0;
-          ids.forEach(id => {
-            const p = prices[id];
-            const lineTotal = p.price * qtys[id];
-            total += lineTotal;
-            html += `<div class="cart-line">
-                <span>${p.name}</span>
-                <div class="qty-controls">
-                  <button type="button" class="qty-btn" onclick="decrementItem(${id})">−</button>
-                  <span>${qtys[id]}</span>
-                  <button type="button" class="qty-btn" onclick="incrementItem(${id})">+</button>
-                  <span style="min-width:55px; text-align:right;">₹${lineTotal.toFixed(0)}</span>
-                </div>
-              </div>`;
+          data.coupons.forEach(co => {
+            const isSel = selectedCoupon && selectedCoupon.code === co.code;
+            html += `<button type="button" class="coupon-chip ${isSel ? 'selected' : ''}"
+                data-code="${esc(co.code)}" data-type="${esc(co.discount_type)}" data-value="${co.discount_value}">
+                <span class="chip-main">
+                  <span class="chip-discount">${esc(co.discount_display)}</span>
+                  <span class="chip-code">${esc(co.code)}</span>
+                </span>
+                ${co.reason ? `<span class="chip-reason">${esc(co.reason)}</span>` : ''}
+              </button>`;
           });
-          container.innerHTML = html;
-          document.getElementById('cartTotal').textContent = '₹' + total.toFixed(0);
+          area.innerHTML = html;
+          area.querySelectorAll('.coupon-chip').forEach(chip => {
+            chip.addEventListener('click', () => toggleCoupon(chip));
+          });
         }
-
-        // Coupon check with debounce
-        const couponInput = document.getElementById('couponInput');
-        if (couponInput) {
-          let couponTimeout;
-          couponInput.addEventListener('input', function() {
-            clearTimeout(couponTimeout);
-            const code = this.value.trim();
-            const phone = document.getElementById('phoneInput').value.trim();
-            const statusDiv = document.getElementById('couponStatus');
-            if (!code || !phone) { statusDiv.innerHTML = ''; return; }
-            couponTimeout = setTimeout(() => {
-              fetch(`/api/coupon_check?code=${encodeURIComponent(code)}&phone=${encodeURIComponent(phone)}`)
-                .then(r => r.json())
-                .then(data => {
-                  statusDiv.innerHTML = `<div class="coupon-status ${data.valid ? 'ok' : 'bad'}">${data.message}</div>`;
-                });
-            }, 300);
-          });
+        function toggleCoupon(chip) {
+          const code = chip.dataset.code;
+          const statusDiv = document.getElementById('couponStatus');
+          if (selectedCoupon && selectedCoupon.code === code) {
+            selectedCoupon = null;
+            document.getElementById('couponCode').value = '';
+            chip.classList.remove('selected');
+            statusDiv.innerHTML = '';
+          } else {
+            selectedCoupon = {
+              code: code,
+              dtype: chip.dataset.type,
+              value: parseFloat(chip.dataset.value)
+            };
+            document.getElementById('couponCode').value = code;
+            document.querySelectorAll('.coupon-chip').forEach(c => c.classList.remove('selected'));
+            chip.classList.add('selected');
+            statusDiv.innerHTML = `<div class="coupon-status ok">Coupon ${esc(code)} applied</div>`;
+          }
+          updateTotals();
         }
       </script>
 
